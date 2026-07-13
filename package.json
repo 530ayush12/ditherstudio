@@ -1,6 +1,6 @@
 {
   "name": "ditherstudio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Dither any image — web studio, CLI, HTTP API, and library for coding agents",
