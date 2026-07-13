@@ -1,0 +1,48 @@
+# DitherStudio
+
+> Local image dithering for humans and coding agents. Web UI, CLI, HTTP API, Node library.
+
+## Use when
+
+- User wants to dither / 1-bit / halftone / Bayer / Floyd-Steinberg process an image
+- An agent needs a deterministic image effect from a CLI or local HTTP call
+
+## Commands
+
+```bash
+npm install
+npm run dev                          # web studio
+npm run cli -- <in> -o <out> [flags] # file dither
+npm run serve                        # HTTP API :8787
+npm run cli -- algorithms --json
+```
+
+## CLI flags
+
+- `-o` output path (required)
+- `-a` algorithm: threshold | random | floyd-steinberg | atkinson | jjn | stucki | burkes | sierra | bayer-2 | bayer-4 | bayer-8 | halftone
+- `-t` threshold 0-255 (default 128)
+- `-p` pixel size 1-32
+- `--dark` / `--light` hex colors
+- `--invert` `--no-serpentine` `--json`
+
+## HTTP (after `npm run serve`)
+
+- GET /health
+- GET /v1/algorithms
+- GET /openapi.json
+- POST /v1/dither  (multipart file= or raw body)
+- POST /v1/dither/base64  JSON { image, algorithm, threshold, pixelSize, dark, light, format }
+
+## Library
+
+```ts
+import { ditherFile } from 'ditherstudio'
+await ditherFile('in.png', 'out.png', { algorithm: 'atkinson' })
+```
+
+## Docs
+
+- AGENTS.md — full agent guide
+- README.md — human overview
+- /openapi.json — when server is running

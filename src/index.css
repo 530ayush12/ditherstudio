@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", "Helvetica Neue", "Arial", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+
+  --color-canvas: #f7f7f6;
+  --color-surface: #ffffff;
+  --color-ink: #111111;
+  --color-ink-soft: #3d3d3d;
+  --color-muted: #737373;
+  --color-faint: #a3a3a3;
+  --color-line: #e8e8e6;
+  --color-line-strong: #d4d4d2;
+  --color-fill: #f0f0ee;
+  --color-fill-hover: #eaeae8;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: #111111;
+    color: #ffffff;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    border-radius: 0;
+    background: var(--color-line-strong);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-ink);
+    border: none;
+    cursor: grab;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-ink);
+    border: none;
+    cursor: grab;
+  }
+
+  input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    padding: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+
+  input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 1px;
+  }
+
+  input[type="color"]::-moz-color-swatch {
+    border: none;
+  }
+}
+
+.stage-grid {
+  background-color: var(--color-canvas);
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
