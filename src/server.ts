@@ -6,7 +6,7 @@ import { createServer as createHttpServer, type IncomingMessage, type ServerResp
 import { ALGORITHM_IDS, ALGORITHMS } from './lib/dither.ts'
 import { ditherBase64, ditherBuffer, type ProcessFileOptions } from './lib/node.ts'
 
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 
 export interface ServeOptions {
   host?: string
@@ -61,6 +61,17 @@ function parseQuery(url: URL): ProcessFileOptions {
     opts.maxDim = Number(q.get('maxDim') ?? q.get('max_dim'))
   if (q.has('format')) opts.format = q.get('format') as ProcessFileOptions['format']
   if (q.has('quality')) opts.quality = Number(q.get('quality'))
+  if (q.has('seed')) opts.seed = Number(q.get('seed'))
+  if (q.has('gamma')) opts.gamma = Number(q.get('gamma'))
+  if (q.has('contrast')) opts.contrast = Number(q.get('contrast'))
+  if (q.has('edgeAware') || q.has('edge_aware'))
+    opts.edgeAware = q.get('edgeAware') === '1' || q.get('edgeAware') === 'true' || q.get('edge_aware') === '1'
+  if (q.has('color') || q.has('colorMode'))
+    opts.colorMode = q.get('color') === '1' || q.get('colorMode') === '1' || q.get('color') === 'true'
+  if (q.has('palette'))
+    opts.palette = q.get('palette')!.split(',').map((s) => (s.startsWith('#') ? s : `#${s}`))
+  if (q.has('exportScale') || q.has('export_scale'))
+    opts.exportScale = Number(q.get('exportScale') ?? q.get('export_scale'))
   return opts
 }
 
@@ -246,6 +257,13 @@ export async function createServer(opts: ServeOptions = {}) {
           format: (json.format as ProcessFileOptions['format']) ?? 'png',
           quality: json.quality !== undefined ? Number(json.quality) : undefined,
           maxDim: json.maxDim !== undefined ? Number(json.maxDim) : undefined,
+          seed: json.seed !== undefined ? Number(json.seed) : undefined,
+          gamma: json.gamma !== undefined ? Number(json.gamma) : undefined,
+          contrast: json.contrast !== undefined ? Number(json.contrast) : undefined,
+          edgeAware: json.edgeAware !== undefined ? Boolean(json.edgeAware) : undefined,
+          colorMode: json.colorMode !== undefined ? Boolean(json.colorMode) : undefined,
+          palette: Array.isArray(json.palette) ? (json.palette as string[]) : undefined,
+          exportScale: json.exportScale !== undefined ? Number(json.exportScale) : undefined,
         }
         const result = await ditherBase64(json.image, optsProc)
         sendJson(res, 200, {

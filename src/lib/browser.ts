@@ -1,7 +1,6 @@
 import type { PixelBuffer } from './dither'
 import { createPixelBuffer } from './dither'
 
-/** Canvas downsample for browser (better quality than pure box when available). */
 export function prepareSource(
   source: HTMLImageElement | ImageBitmap,
   maxDim: number,
@@ -12,24 +11,31 @@ export function prepareSource(
 
   let tw = sw
   let th = sh
-  if (Math.max(sw, sh) > maxDim) {
-    const r = maxDim / Math.max(sw, sh)
+  // For worker path we often pass maxDim=0 and let processBuffer handle it.
+  // Here: prepare at full res (capped lightly to avoid memory bombs in UI decode).
+  const cap = maxDim > 0 ? maxDim : 4096
+  if (Math.max(sw, sh) > cap) {
+    const r = cap / Math.max(sw, sh)
     tw = Math.max(1, Math.round(sw * r))
     th = Math.max(1, Math.round(sh * r))
   }
 
   const ps = Math.max(1, Math.round(pixelSize))
-  const ww = Math.max(1, Math.round(tw / ps))
-  const wh = Math.max(1, Math.round(th / ps))
-
+  // When using processBuffer later, pass pixelSize=1 here and let processBuffer do chunk.
+  // This helper draws at full prepared size.
+  void ps
   const canvas = document.createElement('canvas')
-  canvas.width = ww
-  canvas.height = wh
+  canvas.width = tw
+  canvas.height = th
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   ctx.imageSmoothingEnabled = true
-  ctx.drawImage(source, 0, 0, ww, wh)
-  const imageData = ctx.getImageData(0, 0, ww, wh)
-  return createPixelBuffer(ww, wh, imageData.data)
+  ctx.drawImage(source, 0, 0, tw, th)
+  const imageData = ctx.getImageData(0, 0, tw, th)
+  return createPixelBuffer(tw, th, imageData.data)
+}
+
+export function imageElementToBuffer(img: HTMLImageElement, maxEdge = 4096): PixelBuffer {
+  return prepareSource(img, maxEdge, 1)
 }
 
 export function pixelBufferToImageData(buffer: PixelBuffer): ImageData {
@@ -45,4 +51,8 @@ export function imageDataToBlob(buffer: PixelBuffer, type = 'image/png'): Promis
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Export failed'))), type)
   })
+}
+
+export function bufferToObjectUrl(buffer: PixelBuffer): Promise<string> {
+  return imageDataToBlob(buffer).then((blob) => URL.createObjectURL(blob))
 }

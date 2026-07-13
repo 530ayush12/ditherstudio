@@ -1,33 +1,31 @@
-/**
- * DitherStudio library entry for Node and bundlers.
- *
- * @example
- * ```ts
- * import { ditherFile, ALGORITHMS } from 'ditherstudio'
- * await ditherFile('in.png', 'out.png', { algorithm: 'atkinson', threshold: 140 })
- * ```
- */
 export {
   ALGORITHMS,
   ALGORITHM_IDS,
   DEFAULT_DITHER_OPTIONS,
+  PALETTE_PRESETS,
   createPixelBuffer,
+  createRng,
   dither,
   ditherImageData,
   downsampleBuffer,
+  extractPalette,
   hexToRgb,
   isAlgorithmId,
   mergeDitherOptions,
+  processBuffer,
+  parsePalette,
   rgbToHex,
   upscaleNearest,
   type AlgorithmId,
   type AlgorithmMeta,
   type DitherOptions,
   type PixelBuffer,
+  type Rgb,
 } from './lib/dither.ts'
 
 export {
   ditherBase64,
+  ditherBatch,
   ditherBuffer,
   ditherFile,
   type ProcessFileOptions,

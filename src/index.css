@@ -16,6 +16,21 @@
   --color-fill-hover: #eaeae8;
 }
 
+html[data-theme="dark"],
+.theme-dark {
+  --color-canvas: #0e0e0d;
+  --color-surface: #161614;
+  --color-ink: #f2f2f0;
+  --color-ink-soft: #c8c8c4;
+  --color-muted: #8a8a84;
+  --color-faint: #5c5c56;
+  --color-line: #2a2a26;
+  --color-line-strong: #3a3a34;
+  --color-fill: #1c1c1a;
+  --color-fill-hover: #242420;
+  color-scheme: dark;
+}
+
 @layer base {
   *,
   *::before,
@@ -42,12 +57,13 @@
   }
 
   ::selection {
-    background: #111111;
-    color: #ffffff;
+    background: var(--color-ink);
+    color: var(--color-surface);
   }
 
   button,
-  input {
+  input,
+  select {
     font: inherit;
   }
 
@@ -103,8 +119,8 @@
     border-radius: 1px;
   }
 
-  input[type="color"]::-moz-color-swatch {
-    border: none;
+  input[type="number"] {
+    color: var(--color-ink);
   }
 }
 

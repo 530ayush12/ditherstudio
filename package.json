@@ -17,6 +17,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
     "serve": "tsx src/server.ts",
     "dither": "tsx src/cli.ts"
@@ -37,7 +39,8 @@
     "tailwindcss": "^4.3.2",
     "tsx": "^4.21.0",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=18"

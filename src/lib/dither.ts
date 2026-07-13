@@ -13,30 +13,25 @@ export type AlgorithmId =
   | 'bayer-4'
   | 'bayer-8'
   | 'halftone'
+  | 'blue-noise'
+  | 'riemersma'
+  | 'hybrid'
+
+export type Rgb = [number, number, number]
 
 export interface AlgorithmMeta {
   id: AlgorithmId
   name: string
-  family: 'point' | 'error' | 'ordered' | 'pattern'
+  family: 'point' | 'error' | 'ordered' | 'pattern' | 'modern'
   blurb: string
 }
 
 export const ALGORITHMS: AlgorithmMeta[] = [
   { id: 'threshold', name: 'Threshold', family: 'point', blurb: 'Hard cut. No diffusion.' },
-  { id: 'random', name: 'Random', family: 'point', blurb: 'Noise threshold. Grainy.' },
-  {
-    id: 'floyd-steinberg',
-    name: 'Floyd-Steinberg',
-    family: 'error',
-    blurb: 'Classic error diffusion.',
-  },
+  { id: 'random', name: 'Random', family: 'point', blurb: 'Seeded noise threshold.' },
+  { id: 'floyd-steinberg', name: 'Floyd-Steinberg', family: 'error', blurb: 'Classic error diffusion.' },
   { id: 'atkinson', name: 'Atkinson', family: 'error', blurb: 'Mac classic. Higher contrast.' },
-  {
-    id: 'jjn',
-    name: 'Jarvis-Judice-Ninke',
-    family: 'error',
-    blurb: 'Wide kernel. Soft detail.',
-  },
+  { id: 'jjn', name: 'Jarvis-Judice-Ninke', family: 'error', blurb: 'Wide kernel. Soft detail.' },
   { id: 'stucki', name: 'Stucki', family: 'error', blurb: 'Sharp, clean diffusion.' },
   { id: 'burkes', name: 'Burkes', family: 'error', blurb: 'Faster wide kernel.' },
   { id: 'sierra', name: 'Sierra', family: 'error', blurb: 'Balanced mid-tone spread.' },
@@ -44,11 +39,13 @@ export const ALGORITHMS: AlgorithmMeta[] = [
   { id: 'bayer-4', name: 'Bayer 4x4', family: 'ordered', blurb: 'Standard ordered dither.' },
   { id: 'bayer-8', name: 'Bayer 8x8', family: 'ordered', blurb: 'Fine ordered texture.' },
   { id: 'halftone', name: 'Halftone', family: 'pattern', blurb: 'Circular print dots.' },
+  { id: 'blue-noise', name: 'Blue noise', family: 'modern', blurb: 'Modern void-and-cluster feel.' },
+  { id: 'riemersma', name: 'Riemersma', family: 'modern', blurb: 'Hilbert-path error diffusion.' },
+  { id: 'hybrid', name: 'Hybrid', family: 'modern', blurb: 'Bayer + error diffusion mix.' },
 ]
 
 export const ALGORITHM_IDS = ALGORITHMS.map((a) => a.id) as AlgorithmId[]
 
-/** RGBA pixel buffer (compatible with ImageData shape). */
 export interface PixelBuffer {
   width: number
   height: number
@@ -57,14 +54,24 @@ export interface PixelBuffer {
 
 export interface DitherOptions {
   algorithm: AlgorithmId
-  /** 0-255 */
   threshold: number
   invert: boolean
   serpentine: boolean
-  darkColor: [number, number, number]
-  lightColor: [number, number, number]
-  /** Halftone cell size in pixels (2-32) */
+  darkColor: Rgb
+  lightColor: Rgb
   cellSize: number
+  /** Multi-color palette. Length 2+ overrides dual-tone. */
+  palette?: Rgb[]
+  /** PRNG seed for random / blue-noise variation. */
+  seed: number
+  /** Gamma pre-pass (0.4–2.4). 1 = off. */
+  gamma: number
+  /** Contrast pre-pass (0.5–2). 1 = off. */
+  contrast: number
+  /** Boost threshold near edges for detail. */
+  edgeAware: boolean
+  /** Diffuse error in RGB instead of luminance (multi-color). */
+  colorMode: boolean
 }
 
 export const DEFAULT_DITHER_OPTIONS: DitherOptions = {
@@ -75,26 +82,39 @@ export const DEFAULT_DITHER_OPTIONS: DitherOptions = {
   darkColor: [17, 17, 17],
   lightColor: [250, 250, 250],
   cellSize: 6,
+  seed: 42,
+  gamma: 1,
+  contrast: 1,
+  edgeAware: false,
+  colorMode: false,
 }
 
+export const PALETTE_PRESETS: { id: string; name: string; colors: string[] }[] = [
+  { id: 'bw', name: 'B&W', colors: ['#111111', '#fafafa'] },
+  { id: 'pure', name: 'Pure', colors: ['#000000', '#ffffff'] },
+  { id: 'gameboy', name: 'Game Boy', colors: ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'] },
+  { id: 'cga', name: 'CGA', colors: ['#000000', '#55ffff', '#ff55ff', '#ffffff'] },
+  { id: 'mac', name: 'Mac', colors: ['#000000', '#ffffff'] },
+  { id: 'riso-rb', name: 'Riso RB', colors: ['#000000', '#ff4800', '#0078bf', '#fff6e6'] },
+  { id: 'sepia', name: 'Sepia', colors: ['#1a120b', '#c4a574'] },
+  { id: 'neon', name: 'Neon', colors: ['#0a0a12', '#00ff9c', '#ff2bd6', '#f5f5ff'] },
+  { id: 'paper', name: 'Newsprint', colors: ['#1c1a16', '#e8e2d4'] },
+  { id: 'blueink', name: 'Blue ink', colors: ['#0c1a2e', '#d8e6f8'] },
+]
+
 export function createPixelBuffer(width: number, height: number, data?: Uint8ClampedArray): PixelBuffer {
-  const size = width * height * 4
-  return {
-    width,
-    height,
-    data: data ?? new Uint8ClampedArray(size),
-  }
+  return { width, height, data: data ?? new Uint8ClampedArray(width * height * 4) }
 }
 
 export function isAlgorithmId(value: string): value is AlgorithmId {
   return (ALGORITHM_IDS as string[]).includes(value)
 }
 
-function luminance(r: number, g: number, b: number): number {
+export function luminance(r: number, g: number, b: number): number {
   return 0.299 * r + 0.587 * g + 0.114 * b
 }
 
-function parseHex(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): Rgb {
   const h = hex.replace('#', '').trim()
   const full =
     h.length === 3
@@ -103,15 +123,9 @@ function parseHex(hex: string): [number, number, number] {
           .map((c) => c + c)
           .join('')
       : h
-  if (!/^[0-9a-fA-F]{6}$/.test(full)) {
-    throw new Error(`Invalid hex color: ${hex}`)
-  }
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) throw new Error(`Invalid hex color: ${hex}`)
   const n = parseInt(full, 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-export function hexToRgb(hex: string): [number, number, number] {
-  return parseHex(hex)
 }
 
 export function rgbToHex(r: number, g: number, b: number): string {
@@ -121,6 +135,21 @@ export function rgbToHex(r: number, g: number, b: number): string {
       .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'))
       .join('')
   )
+}
+
+export function parsePalette(hexList: string[]): Rgb[] {
+  return hexList.map(hexToRgb)
+}
+
+/** Mulberry32 PRNG */
+export function createRng(seed: number): () => number {
+  let t = seed >>> 0
+  return () => {
+    t += 0x6d2b79f5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
 }
 
 const BAYER_2 = [
@@ -145,7 +174,6 @@ const BAYER_8 = [
 ]
 
 type Kernel = { dx: number; dy: number; w: number }[]
-
 const KERNELS: Record<string, { div: number; taps: Kernel }> = {
   'floyd-steinberg': {
     div: 16,
@@ -230,28 +258,142 @@ const KERNELS: Record<string, { div: number; taps: Kernel }> = {
   },
 }
 
-function writePixel(
-  out: Uint8ClampedArray,
-  i: number,
-  on: boolean,
-  dark: [number, number, number],
-  light: [number, number, number],
-  alpha: number,
-) {
-  const c = on ? light : dark
-  out[i] = c[0]
-  out[i + 1] = c[1]
-  out[i + 2] = c[2]
-  out[i + 3] = alpha
+function clamp(v: number, lo = 0, hi = 255): number {
+  return v < lo ? lo : v > hi ? hi : v
+}
+
+function applyGammaContrast(v: number, gamma: number, contrast: number): number {
+  let x = v / 255
+  if (gamma !== 1) x = Math.pow(x, 1 / gamma)
+  if (contrast !== 1) x = (x - 0.5) * contrast + 0.5
+  return clamp(x * 255)
+}
+
+function colorDist2(a: Rgb, b: Rgb): number {
+  const dr = a[0] - b[0]
+  const dg = a[1] - b[1]
+  const db = a[2] - b[2]
+  return dr * dr + dg * dg + db * db
+}
+
+function nearestColor(r: number, g: number, b: number, palette: Rgb[]): Rgb {
+  let best = palette[0]
+  let bestD = Infinity
+  for (const c of palette) {
+    const d = colorDist2([r, g, b], c)
+    if (d < bestD) {
+      bestD = d
+      best = c
+    }
+  }
+  return best
+}
+
+function resolvePalette(options: DitherOptions): Rgb[] {
+  let palette: Rgb[]
+  if (options.palette && options.palette.length >= 2) {
+    palette = options.palette.map((c) => [...c] as Rgb)
+  } else {
+    palette = [options.darkColor, options.lightColor]
+  }
+  if (options.invert) palette = [...palette].reverse()
+  return palette
+}
+
+/** Simple blue-noise-ish 64x64 tile from seeded hash (stable, no huge table). */
+function blueNoiseValue(x: number, y: number, seed: number): number {
+  // Multi-hash to reduce lattice artifacts
+  let n = (x * 374761393 + y * 668265263 + seed * 1274126177) | 0
+  n = Math.imul(n ^ (n >>> 13), 1274126177)
+  n = Math.imul(n ^ (n >>> 16), 2246822519)
+  n = (n ^ (n >>> 13)) >>> 0
+  // Spatially scramble with second sample
+  const n2 =
+    (Math.imul((x * 7 + 13) ^ (y * 11 + seed), 1597334677) ^
+      Math.imul(y * 17 + x * 3, 3812015801)) >>>
+    0
+  return ((n * 0.6 + n2 * 0.4) % 256) / 255
+}
+
+/** Edge magnitude 0–1 via 3x3 sobel-ish on luminance buffer */
+function edgeMap(gray: Float32Array, w: number, h: number): Float32Array {
+  const out = new Float32Array(w * h)
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x
+      const gx =
+        -gray[i - w - 1] +
+        gray[i - w + 1] -
+        2 * gray[i - 1] +
+        2 * gray[i + 1] -
+        gray[i + w - 1] +
+        gray[i + w + 1]
+      const gy =
+        -gray[i - w - 1] -
+        2 * gray[i - w] -
+        gray[i - w + 1] +
+        gray[i + w - 1] +
+        2 * gray[i + w] +
+        gray[i + w + 1]
+      out[i] = Math.min(1, Math.hypot(gx, gy) / 255)
+    }
+  }
+  return out
+}
+
+/** Hilbert curve order covering at least n*n */
+function hilbertPoints(order: number): Array<[number, number]> {
+  const n = 1 << order
+  const pts: Array<[number, number]> = []
+  const rot = (n: number, x: number, y: number, rx: number, ry: number) => {
+    if (ry === 0) {
+      if (rx === 1) {
+        x = n - 1 - x
+        y = n - 1 - y
+      }
+      return [y, x] as [number, number]
+    }
+    return [x, y] as [number, number]
+  }
+  for (let d = 0; d < n * n; d++) {
+    let x = 0
+    let y = 0
+    let t = d
+    for (let s = 1; s < n; s *= 2) {
+      const rx = 1 & (t / 2)
+      const ry = 1 & (t ^ rx)
+      ;[x, y] = rot(s, x, y, rx, ry)
+      x += s * rx
+      y += s * ry
+      t = Math.floor(t / 4)
+    }
+    pts.push([x, y])
+  }
+  return pts
 }
 
 function normalizeOptions(partial?: Partial<DitherOptions>): DitherOptions {
   return {
     ...DEFAULT_DITHER_OPTIONS,
     ...partial,
-    threshold: Math.max(0, Math.min(255, partial?.threshold ?? DEFAULT_DITHER_OPTIONS.threshold)),
+    threshold: clamp(partial?.threshold ?? DEFAULT_DITHER_OPTIONS.threshold),
     cellSize: Math.max(2, Math.min(32, partial?.cellSize ?? DEFAULT_DITHER_OPTIONS.cellSize)),
+    seed: (partial?.seed ?? DEFAULT_DITHER_OPTIONS.seed) >>> 0,
+    gamma: Math.max(0.4, Math.min(2.4, partial?.gamma ?? 1)),
+    contrast: Math.max(0.5, Math.min(2, partial?.contrast ?? 1)),
   }
+}
+
+function writeRgb(
+  out: Uint8ClampedArray,
+  i: number,
+  c: Rgb,
+  alpha: number,
+) {
+  out[i] = c[0]
+  out[i + 1] = c[1]
+  out[i + 2] = c[2]
+  out[i + 3] = alpha
 }
 
 /**
@@ -262,50 +404,122 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
   const { width, height, data } = buffer
   const out = createPixelBuffer(width, height)
   const outData = out.data
-
-  const dark = options.invert ? options.lightColor : options.darkColor
-  const light = options.invert ? options.darkColor : options.lightColor
+  const palette = resolvePalette(options)
   const thr = options.threshold
+  const rng = createRng(options.seed)
+  const multi = palette.length > 2 || options.colorMode
 
+  // Preprocess luminance + optional RGB working buffers
   const gray = new Float32Array(width * height)
+  const rCh = new Float32Array(width * height)
+  const gCh = new Float32Array(width * height)
+  const bCh = new Float32Array(width * height)
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4
-      gray[y * width + x] = luminance(data[i], data[i + 1], data[i + 2])
+      const idx = y * width + x
+      const i = idx * 4
+      let r = data[i]
+      let g = data[i + 1]
+      let b = data[i + 2]
+      r = applyGammaContrast(r, options.gamma, options.contrast)
+      g = applyGammaContrast(g, options.gamma, options.contrast)
+      b = applyGammaContrast(b, options.gamma, options.contrast)
+      rCh[idx] = r
+      gCh[idx] = g
+      bCh[idx] = b
+      gray[idx] = luminance(r, g, b)
     }
   }
 
+  const edges = options.edgeAware ? edgeMap(gray, width, height) : null
+
+  const localThr = (idx: number) => {
+    if (!edges) return thr
+    // Near edges: lower threshold slightly to keep detail darks
+    return thr - edges[idx] * 40
+  }
+
+  const quantizeGray = (v: number, idx: number): Rgb => {
+    if (palette.length === 2) {
+      return v >= localThr(idx) ? palette[1] : palette[0]
+    }
+    // Map gray to nearest by luminance of palette
+    let best = palette[0]
+    let bestD = Infinity
+    for (const c of palette) {
+      const d = Math.abs(luminance(c[0], c[1], c[2]) - v)
+      if (d < bestD) {
+        bestD = d
+        best = c
+      }
+    }
+    return best
+  }
+
+  const quantizeColor = (r: number, g: number, b: number): Rgb => nearestColor(r, g, b, palette)
+
   const algo = options.algorithm
 
-  if (algo === 'threshold' || algo === 'random') {
+  // --- Point ---
+  if (algo === 'threshold' || algo === 'random' || algo === 'blue-noise') {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = y * width + x
         const i = idx * 4
-        const g = gray[idx]
-        const t = algo === 'random' ? thr + (Math.random() * 2 - 1) * 64 : thr
-        writePixel(outData, i, g >= t, dark, light, data[i + 3])
+        let bias = 0
+        if (algo === 'random') bias = (rng() * 2 - 1) * 64
+        if (algo === 'blue-noise') bias = (blueNoiseValue(x, y, options.seed) - 0.5) * 255
+        if (multi && options.colorMode) {
+          writeRgb(
+            outData,
+            i,
+            quantizeColor(rCh[idx] + bias * 0.35, gCh[idx] + bias * 0.35, bCh[idx] + bias * 0.35),
+            data[i + 3],
+          )
+        } else if (palette.length === 2) {
+          const t = localThr(idx) + bias
+          writeRgb(outData, i, gray[idx] >= t ? palette[1] : palette[0], data[i + 3])
+        } else {
+          writeRgb(outData, i, quantizeGray(gray[idx] + bias, idx), data[i + 3])
+        }
       }
     }
     return out
   }
 
-  if (algo.startsWith('bayer-')) {
+  // --- Bayer / hybrid ordered stage ---
+  if (algo.startsWith('bayer-') || algo === 'hybrid') {
     const matrix = algo === 'bayer-2' ? BAYER_2 : algo === 'bayer-4' ? BAYER_4 : BAYER_8
     const n = matrix.length
     const levels = n * n
+    // For pure bayer, write output; hybrid continues with error on residual conceptually - do bayer then light FS
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = y * width + x
         const i = idx * 4
         const m = (matrix[y % n][x % n] + 0.5) / levels
-        const localThr = thr + (m - 0.5) * 255
-        writePixel(outData, i, gray[idx] >= localThr, dark, light, data[i + 3])
+        const bias = (m - 0.5) * 255
+        if (multi && options.colorMode) {
+          writeRgb(
+            outData,
+            i,
+            quantizeColor(rCh[idx] + bias * 0.5, gCh[idx] + bias * 0.5, bCh[idx] + bias * 0.5),
+            data[i + 3],
+          )
+        } else if (palette.length === 2) {
+          writeRgb(outData, i, gray[idx] >= localThr(idx) + bias ? palette[1] : palette[0], data[i + 3])
+        } else {
+          writeRgb(outData, i, quantizeGray(gray[idx] + bias, idx), data[i + 3])
+        }
       }
     }
-    return out
+    if (algo !== 'hybrid') return out
+    // Hybrid: take bayer result as starting quant, re-run FS on error from original gray
+    // Rebuild working gray from original, use FS with palette
   }
 
+  // --- Halftone ---
   if (algo === 'halftone') {
     const cell = options.cellSize
     for (let y = 0; y < height; y++) {
@@ -317,44 +531,124 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         const sx = Math.min(width - 1, Math.max(0, Math.floor(cx)))
         const sy = Math.min(height - 1, Math.max(0, Math.floor(cy)))
         const g = gray[sy * width + sx]
-        const brightness = g / 255
         const maxR = cell * 0.5 * Math.SQRT2
         const tNorm = thr / 255
-        const radius = maxR * (1 - brightness) * (0.4 + tNorm * 0.8)
+        const radius = maxR * (1 - g / 255) * (0.4 + tNorm * 0.8)
         const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy)
-        writePixel(outData, i, dist > radius, dark, light, data[i + 3])
+        const c = dist > radius ? palette[palette.length - 1] : palette[0]
+        writeRgb(outData, i, c, data[i + 3])
       }
     }
     return out
   }
 
-  const kernel = KERNELS[algo]
+  // --- Riemersma (Hilbert) ---
+  if (algo === 'riemersma') {
+    let order = 1
+    while (1 << order < Math.max(width, height)) order++
+    const path = hilbertPoints(order)
+    const errQ: number[] = []
+    const weights = [16, 8, 4, 2, 1]
+    const qLen = weights.length
+    for (let k = 0; k < qLen; k++) errQ.push(0)
+    for (const [hx, hy] of path) {
+      if (hx >= width || hy >= height) continue
+      const idx = hy * width + hx
+      const i = idx * 4
+      const errSum = errQ.reduce((s, e, k) => s + e * weights[k], 0) / 31
+      const v = gray[idx] + errSum
+      const c = quantizeGray(v, idx)
+      const q = luminance(c[0], c[1], c[2])
+      const err = v - q
+      errQ.unshift(err)
+      errQ.pop()
+      writeRgb(outData, i, c, data[i + 3])
+    }
+    // Fill any gaps (non-covered if any)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4
+        if (outData[i + 3] === 0 && data[i + 3] !== 0) {
+          writeRgb(outData, i, quantizeGray(gray[y * width + x], y * width + x), data[i + 3])
+        } else if (outData[i + 3] === 0) {
+          outData[i + 3] = data[i + 3]
+        }
+      }
+    }
+    return out
+  }
+
+  // --- Error diffusion (incl. hybrid second pass base) ---
+  let kernelKey = algo
+  if (algo === 'hybrid') kernelKey = 'floyd-steinberg'
+  const kernel = KERNELS[kernelKey]
+
   if (!kernel) {
+    // Fallback point
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = y * width + x
-        writePixel(outData, idx * 4, gray[idx] >= thr, dark, light, data[idx * 4 + 3])
+        writeRgb(outData, idx * 4, quantizeGray(gray[idx], idx), data[idx * 4 + 3])
       }
     }
     return out
   }
 
-  for (let y = 0; y < height; y++) {
-    const leftToRight = !options.serpentine || y % 2 === 0
-    const xStart = leftToRight ? 0 : width - 1
-    const xEnd = leftToRight ? width : -1
-    const xStep = leftToRight ? 1 : -1
+  // Hybrid: seed gray with residual after bayer (already wrote out) - re-read... simpler: FS from original
+  // Color error diffusion
+  if (multi && options.colorMode) {
+    for (let y = 0; y < height; y++) {
+      const ltr = !options.serpentine || y % 2 === 0
+      const xStart = ltr ? 0 : width - 1
+      const xEnd = ltr ? width : -1
+      const xStep = ltr ? 1 : -1
+      for (let x = xStart; x !== xEnd; x += xStep) {
+        const idx = y * width + x
+        const i = idx * 4
+        const oldR = rCh[idx]
+        const oldG = gCh[idx]
+        const oldB = bCh[idx]
+        const neu = quantizeColor(oldR, oldG, oldB)
+        writeRgb(outData, i, neu, data[i + 3])
+        const er = oldR - neu[0]
+        const eg = oldG - neu[1]
+        const eb = oldB - neu[2]
+        for (const tap of kernel.taps) {
+          const tx = x + (ltr ? tap.dx : -tap.dx)
+          const ty = y + tap.dy
+          if (tx < 0 || tx >= width || ty < 0 || ty >= height) continue
+          const ti = ty * width + tx
+          const f = tap.w / kernel.div
+          rCh[ti] += er * f
+          gCh[ti] += eg * f
+          bCh[ti] += eb * f
+        }
+      }
+    }
+    return out
+  }
 
+  // Luminance error diffusion
+  for (let y = 0; y < height; y++) {
+    const ltr = !options.serpentine || y % 2 === 0
+    const xStart = ltr ? 0 : width - 1
+    const xEnd = ltr ? width : -1
+    const xStep = ltr ? 1 : -1
     for (let x = xStart; x !== xEnd; x += xStep) {
       const idx = y * width + x
       const i = idx * 4
-      const old = gray[idx]
-      const neu = old >= thr ? 255 : 0
+      let old = gray[idx]
+      if (algo === 'hybrid') {
+        const matrix = BAYER_8
+        const m = (matrix[y % 8][x % 8] + 0.5) / 64
+        old += (m - 0.5) * 48
+      }
+      const neuC = quantizeGray(old, idx)
+      const neu = luminance(neuC[0], neuC[1], neuC[2])
       const err = old - neu
-      writePixel(outData, i, neu === 255, dark, light, data[i + 3])
-
+      writeRgb(outData, i, neuC, data[i + 3])
       for (const tap of kernel.taps) {
-        const tx = x + (leftToRight ? tap.dx : -tap.dx)
+        const tx = x + (ltr ? tap.dx : -tap.dx)
         const ty = y + tap.dy
         if (tx < 0 || tx >= width || ty < 0 || ty >= height) continue
         gray[ty * width + tx] += (err * tap.w) / kernel.div
@@ -365,15 +659,6 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
   return out
 }
 
-/** @deprecated Use dither() */
-export function ditherImageData(
-  imageData: { width: number; height: number; data: Uint8ClampedArray },
-  options: DitherOptions,
-): PixelBuffer {
-  return dither(imageData, options)
-}
-
-/** Nearest-neighbor upscale for chunky pixels. */
 export function upscaleNearest(buffer: PixelBuffer, factor: number): PixelBuffer {
   const f = Math.max(1, Math.round(factor))
   if (f === 1) return buffer
@@ -383,17 +668,13 @@ export function upscaleNearest(buffer: PixelBuffer, factor: number): PixelBuffer
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const si = (y * width + x) * 4
-      const r = data[si]
-      const g = data[si + 1]
-      const b = data[si + 2]
-      const a = data[si + 3]
       for (let dy = 0; dy < f; dy++) {
         for (let dx = 0; dx < f; dx++) {
           const di = ((y * f + dy) * width * f + (x * f + dx)) * 4
-          od[di] = r
-          od[di + 1] = g
-          od[di + 2] = b
-          od[di + 3] = a
+          od[di] = data[si]
+          od[di + 1] = data[si + 1]
+          od[di + 2] = data[si + 2]
+          od[di + 3] = data[si + 3]
         }
       }
     }
@@ -401,10 +682,6 @@ export function upscaleNearest(buffer: PixelBuffer, factor: number): PixelBuffer
   return out
 }
 
-/**
- * Downsample RGBA buffer by block-averaging (pixelSize) after optional max-dim fit.
- * Pure (no canvas). Used by Node and can be used when you already have raw pixels.
- */
 export function downsampleBuffer(
   buffer: PixelBuffer,
   maxDim: number,
@@ -413,7 +690,7 @@ export function downsampleBuffer(
   const { width: sw, height: sh, data } = buffer
   let tw = sw
   let th = sh
-  if (Math.max(sw, sh) > maxDim) {
+  if (maxDim > 0 && Math.max(sw, sh) > maxDim) {
     const r = maxDim / Math.max(sw, sh)
     tw = Math.max(1, Math.round(sw * r))
     th = Math.max(1, Math.round(sh * r))
@@ -421,22 +698,20 @@ export function downsampleBuffer(
   const ps = Math.max(1, Math.round(pixelSize))
   const ww = Math.max(1, Math.round(tw / ps))
   const wh = Math.max(1, Math.round(th / ps))
-
-  // Box filter into target size
   const out = createPixelBuffer(ww, wh)
   for (let y = 0; y < wh; y++) {
     for (let x = 0; x < ww; x++) {
       const x0 = Math.floor((x * sw) / ww)
-      const x1 = Math.floor(((x + 1) * sw) / ww)
+      const x1 = Math.max(x0 + 1, Math.floor(((x + 1) * sw) / ww))
       const y0 = Math.floor((y * sh) / wh)
-      const y1 = Math.floor(((y + 1) * sh) / wh)
+      const y1 = Math.max(y0 + 1, Math.floor(((y + 1) * sh) / wh))
       let r = 0
       let g = 0
       let b = 0
       let a = 0
       let n = 0
-      for (let sy = y0; sy < Math.max(y0 + 1, y1); sy++) {
-        for (let sx = x0; sx < Math.max(x0 + 1, x1); sx++) {
+      for (let sy = y0; sy < y1; sy++) {
+        for (let sx = x0; sx < x1; sx++) {
           const i = (sy * sw + sx) * 4
           r += data[i]
           g += data[i + 1]
@@ -455,6 +730,71 @@ export function downsampleBuffer(
   return out
 }
 
+/** Median-cut palette extraction */
+export function extractPalette(buffer: PixelBuffer, count: number): Rgb[] {
+  const n = Math.max(2, Math.min(16, Math.round(count)))
+  type Px = { r: number; g: number; b: number }
+  const pixels: Px[] = []
+  const { data, width, height } = buffer
+  const step = Math.max(1, Math.floor(Math.sqrt((width * height) / 8000)))
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const i = (y * width + x) * 4
+      if (data[i + 3] < 16) continue
+      pixels.push({ r: data[i], g: data[i + 1], b: data[i + 2] })
+    }
+  }
+  if (pixels.length === 0) return [[0, 0, 0], [255, 255, 255]]
+
+  type Box = { pts: Px[] }
+  const range = (pts: Px[], ch: 'r' | 'g' | 'b') => {
+    let lo = 255
+    let hi = 0
+    for (const p of pts) {
+      lo = Math.min(lo, p[ch])
+      hi = Math.max(hi, p[ch])
+    }
+    return hi - lo
+  }
+  const boxes: Box[] = [{ pts: pixels }]
+  while (boxes.length < n) {
+    let bi = 0
+    let best = -1
+    for (let i = 0; i < boxes.length; i++) {
+      if (boxes[i].pts.length < 2) continue
+      const score = Math.max(range(boxes[i].pts, 'r'), range(boxes[i].pts, 'g'), range(boxes[i].pts, 'b'))
+      if (score > best) {
+        best = score
+        bi = i
+      }
+    }
+    if (best <= 0) break
+    const box = boxes.splice(bi, 1)[0]
+    const ch =
+      range(box.pts, 'r') >= range(box.pts, 'g') && range(box.pts, 'r') >= range(box.pts, 'b')
+        ? 'r'
+        : range(box.pts, 'g') >= range(box.pts, 'b')
+          ? 'g'
+          : 'b'
+    box.pts.sort((a, b) => a[ch] - b[ch])
+    const mid = Math.floor(box.pts.length / 2)
+    boxes.push({ pts: box.pts.slice(0, mid) }, { pts: box.pts.slice(mid) })
+  }
+
+  return boxes.map((box) => {
+    let r = 0
+    let g = 0
+    let b = 0
+    for (const p of box.pts) {
+      r += p.r
+      g += p.g
+      b += p.b
+    }
+    const m = box.pts.length || 1
+    return [Math.round(r / m), Math.round(g / m), Math.round(b / m)] as Rgb
+  })
+}
+
 export function mergeDitherOptions(
   overrides: Partial<{
     algorithm: string
@@ -463,16 +803,22 @@ export function mergeDitherOptions(
     serpentine: boolean
     dark: string
     light: string
-    darkColor: [number, number, number]
-    lightColor: [number, number, number]
+    darkColor: Rgb
+    lightColor: Rgb
     cellSize: number
+    palette: string[] | Rgb[]
+    seed: number
+    gamma: number
+    contrast: number
+    edgeAware: boolean
+    colorMode: boolean
   }> = {},
 ): DitherOptions {
   const base = { ...DEFAULT_DITHER_OPTIONS }
   if (overrides.algorithm) {
     if (!isAlgorithmId(overrides.algorithm)) {
       throw new Error(
-        `Unknown algorithm "${overrides.algorithm}". Use one of: ${ALGORITHM_IDS.join(', ')}`,
+        `Unknown algorithm "${overrides.algorithm}". Use: ${ALGORITHM_IDS.join(', ')}`,
       )
     }
     base.algorithm = overrides.algorithm
@@ -485,5 +831,43 @@ export function mergeDitherOptions(
   if (overrides.lightColor) base.lightColor = overrides.lightColor
   if (overrides.dark) base.darkColor = hexToRgb(overrides.dark)
   if (overrides.light) base.lightColor = hexToRgb(overrides.light)
+  if (overrides.seed !== undefined) base.seed = overrides.seed
+  if (overrides.gamma !== undefined) base.gamma = overrides.gamma
+  if (overrides.contrast !== undefined) base.contrast = overrides.contrast
+  if (overrides.edgeAware !== undefined) base.edgeAware = overrides.edgeAware
+  if (overrides.colorMode !== undefined) base.colorMode = overrides.colorMode
+  if (overrides.palette) {
+    base.palette = overrides.palette.map((c) =>
+      typeof c === 'string' ? hexToRgb(c) : (c as Rgb),
+    )
+  }
   return normalizeOptions(base)
+}
+
+/** @deprecated */
+export function ditherImageData(
+  imageData: { width: number; height: number; data: Uint8ClampedArray },
+  options: DitherOptions,
+): PixelBuffer {
+  return dither(imageData, options)
+}
+
+/** Full process: downsample → dither → upscale pixel → export scale */
+export function processBuffer(
+  source: PixelBuffer,
+  opts: {
+    dither?: Partial<DitherOptions>
+    pixelSize?: number
+    maxDim?: number
+    exportScale?: number
+  } = {},
+): PixelBuffer {
+  const pixelSize = Math.max(1, Math.round(opts.pixelSize ?? 1))
+  const maxDim = opts.maxDim ?? 0
+  const exportScale = Math.max(1, Math.round(opts.exportScale ?? 1))
+  let buf = downsampleBuffer(source, maxDim || 999999, pixelSize)
+  buf = dither(buf, opts.dither)
+  if (pixelSize > 1) buf = upscaleNearest(buf, pixelSize)
+  if (exportScale > 1) buf = upscaleNearest(buf, exportScale)
+  return buf
 }
