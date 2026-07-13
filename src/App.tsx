@@ -396,8 +396,20 @@ export default function App() {
                 {`import { ditherFile } from 'ditherstudio'\nawait ditherFile('in.png', 'out.png', {\n  algorithm: '${algorithm}',\n  threshold: ${threshold},\n})`}
               </pre>
               <p className="mt-2 text-[12px] text-muted leading-relaxed">
-                Full docs in <code className="font-mono text-ink-soft">AGENTS.md</code> and{' '}
-                <code className="font-mono text-ink-soft">llms.txt</code>. OpenAPI at{' '}
+                Skill:{' '}
+                <a
+                  className="text-ink-soft underline underline-offset-2 hover:text-ink"
+                  href="https://ditherskill.ideatr.dev"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  ditherskill.ideatr.dev
+                </a>
+                . Install{' '}
+                <code className="font-mono text-ink-soft">
+                  npx skills add arjunkshah/ditherskill -g -y
+                </code>
+                . OpenAPI at{' '}
                 <code className="font-mono text-ink-soft">/openapi.json</code> when serving.
               </p>
             </div>
