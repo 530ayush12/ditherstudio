@@ -7,6 +7,7 @@ import {
   isAlgorithmId,
   rgbToHex,
 } from './dither'
+import type { GeneratorId } from './generate'
 
 export interface StudioPreset {
   algorithm: AlgorithmId
@@ -26,8 +27,21 @@ export interface StudioPreset {
   exportScale: number
   maxDim: number
   theme: 'light' | 'dark'
-  /** Named sample from /examples/sources */
   sample?: string
+  brightness: number
+  saturation: number
+  noise: number
+  strength: number
+  softness: number
+  /** Generator mode */
+  genType?: GeneratorId
+  genValue: number
+  genWidth: number
+  genHeight: number
+  genAnimate: boolean
+  genSpeed: number
+  genLabel: string
+  genAccent: string
 }
 
 export const DEFAULT_PRESET: StudioPreset = {
@@ -49,6 +63,19 @@ export const DEFAULT_PRESET: StudioPreset = {
   maxDim: 2400,
   theme: 'light',
   sample: undefined,
+  brightness: 0,
+  saturation: 1,
+  noise: 0,
+  strength: 1,
+  softness: 0,
+  genType: undefined,
+  genValue: 0.62,
+  genWidth: 640,
+  genHeight: 400,
+  genAnimate: true,
+  genSpeed: 0.35,
+  genLabel: 'Dither',
+  genAccent: '#111111',
 }
 
 export function presetToDitherOptions(p: StudioPreset): Partial<DitherOptions> {
@@ -67,6 +94,11 @@ export function presetToDitherOptions(p: StudioPreset): Partial<DitherOptions> {
     edgeAware: p.edgeAware,
     colorMode: p.colorMode || palette.length > 2,
     palette: palette.length >= 2 ? palette : undefined,
+    brightness: p.brightness,
+    saturation: p.saturation,
+    noise: p.noise,
+    strength: p.strength,
+    softness: p.softness,
   }
 }
 
@@ -89,8 +121,26 @@ export function presetToQuery(p: StudioPreset): string {
   if (p.maxDim !== 2400) q.set('max', String(p.maxDim))
   if (p.theme === 'dark') q.set('theme', 'dark')
   if (p.sample) q.set('sample', p.sample)
-  if (p.paletteHex.length > 2 || (p.paletteHex[0] !== p.darkHex || p.paletteHex[1] !== p.lightHex)) {
-    q.set('pal', p.paletteHex.map((h) => h.replace('#', '')).join(','))
+  if (p.brightness !== 0) q.set('br', String(p.brightness))
+  if (p.saturation !== 1) q.set('sat', String(p.saturation))
+  if (p.noise !== 0) q.set('noise', String(p.noise))
+  if (p.strength !== 1) q.set('str', String(p.strength))
+  if (p.softness !== 0) q.set('soft', String(p.softness))
+  if (p.genType) {
+    q.set('gen', p.genType)
+    q.set('gv', String(p.genValue))
+    if (!p.genAnimate) q.set('anim', '0')
+    if (p.genSpeed !== 0.35) q.set('spd', String(p.genSpeed))
+  }
+  if (
+    p.paletteHex.length > 2 ||
+    p.paletteHex[0] !== p.darkHex ||
+    p.paletteHex[1] !== p.lightHex
+  ) {
+    q.set(
+      'pal',
+      p.paletteHex.map((h) => h.replace('#', '')).join(','),
+    )
   }
   return q.toString()
 }
@@ -116,6 +166,15 @@ export function presetFromQuery(search: string): Partial<StudioPreset> {
   if (q.has('max')) out.maxDim = Number(q.get('max'))
   if (q.get('theme') === 'dark') out.theme = 'dark'
   if (q.has('sample')) out.sample = q.get('sample') || undefined
+  if (q.has('br')) out.brightness = Number(q.get('br'))
+  if (q.has('sat')) out.saturation = Number(q.get('sat'))
+  if (q.has('noise')) out.noise = Number(q.get('noise'))
+  if (q.has('str')) out.strength = Number(q.get('str'))
+  if (q.has('soft')) out.softness = Number(q.get('soft'))
+  if (q.has('gen')) out.genType = q.get('gen') as StudioPreset['genType']
+  if (q.has('gv')) out.genValue = Number(q.get('gv'))
+  if (q.get('anim') === '0') out.genAnimate = false
+  if (q.has('spd')) out.genSpeed = Number(q.get('spd'))
   if (q.has('pal')) {
     out.paletteHex = q
       .get('pal')!

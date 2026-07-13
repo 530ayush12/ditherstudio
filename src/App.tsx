@@ -22,7 +22,7 @@ import {
   extractPalette,
   rgbToHex,
 } from './lib/dither'
-import { imageElementToBuffer, imageDataToBlob } from './lib/browser'
+import { imageElementToBuffer, imageDataToBlob, canvasToBuffer } from './lib/browser'
 import {
   DEFAULT_PRESET,
   type StudioPreset,
@@ -34,6 +34,8 @@ import {
   presetToQuery,
 } from './lib/presets'
 import { useDitherWorker } from './hooks/useDitherWorker'
+import { GeneratePanel } from './components/GeneratePanel'
+import { renderGenerator, type GeneratorId } from './lib/generate'
 
 type SourceState = {
   fileName: string
@@ -110,6 +112,8 @@ export default function App() {
   >([])
   const [zoom, setZoom] = useState(1)
   const [draggingCompare, setDraggingCompare] = useState(false)
+  const [panel, setPanel] = useState<'dither' | 'tone' | 'generate'>('dither')
+  const [genPhase, setGenPhase] = useState(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultBlobRef = useRef<Blob | null>(null)
@@ -117,6 +121,7 @@ export default function App() {
   const sourceBufRef = useRef<import('./lib/dither').PixelBuffer | null>(null)
   const processGen = useRef(0)
   const stageRef = useRef<HTMLDivElement>(null)
+  const animRef = useRef<number | null>(null)
   const { run: runWorker } = useDitherWorker()
 
   const activeMeta = useMemo(
@@ -274,9 +279,162 @@ export default function App() {
     return () => window.removeEventListener('paste', onPaste)
   }, [loadFile])
 
-  // Process
+  const buildGenBuffer = useCallback(
+    (t: number) => {
+      if (!preset.genType) return null
+      const canvas = renderGenerator(preset.genType, {
+        t,
+        value: preset.genValue,
+        width: preset.genWidth,
+        height: preset.genHeight,
+        seed: preset.seed,
+        label: preset.genLabel,
+        ink: preset.darkHex,
+        paper: preset.lightHex,
+        accent: preset.genAccent,
+        muted: '#9a9a94',
+      })
+      return { canvas, buf: canvasToBuffer(canvas) }
+    },
+    [preset],
+  )
+
+  const commitGenSource = useCallback(
+    (canvas: HTMLCanvasElement, buf: import('./lib/dither').PixelBuffer) => {
+      sourceBufRef.current = buf
+      const objectUrl = canvas.toDataURL('image/png')
+      setSource((prev) => {
+        if (prev?.objectUrl.startsWith('blob:')) URL.revokeObjectURL(prev.objectUrl)
+        return {
+          fileName: `gen-${preset.genType ?? 'component'}.png`,
+          objectUrl,
+          width: canvas.width,
+          height: canvas.height,
+          element: prev?.element ?? new Image(),
+        }
+      })
+    },
+    [preset.genType],
+  )
+
+  // Still frame when not animating
+  useEffect(() => {
+    if (!preset.genType || preset.genAnimate) return
+    const built = buildGenBuffer(genPhase)
+    if (built) commitGenSource(built.canvas, built.buf)
+  }, [
+    preset.genType,
+    preset.genValue,
+    preset.genWidth,
+    preset.genHeight,
+    preset.genLabel,
+    preset.genAccent,
+    preset.darkHex,
+    preset.lightHex,
+    preset.seed,
+    preset.genAnimate,
+    buildGenBuffer,
+    commitGenSource,
+    genPhase,
+  ])
+
+  // Live animate: generate + dither each tick (capped)
+  useEffect(() => {
+    if (!preset.genType || !preset.genAnimate) {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+      return
+    }
+    let alive = true
+    let last = performance.now()
+    let phase = 0
+    let dithering = false
+    const loop = (now: number) => {
+      if (!alive) return
+      const dt = Math.min(0.05, (now - last) / 1000)
+      last = now
+      phase = (phase + dt * Math.max(0.05, preset.genSpeed)) % 1
+      setGenPhase(phase)
+      if (!dithering) {
+        dithering = true
+        const built = buildGenBuffer(phase)
+        if (built) {
+          sourceBufRef.current = built.buf
+          // lightweight source preview every few frames
+          if (Math.floor(phase * 30) % 3 === 0) {
+            commitGenSource(built.canvas, built.buf)
+          }
+          void runWorker(built.buf, {
+            dither: presetToDitherOptions(preset),
+            pixelSize: Math.max(1, preset.pixelSize),
+            maxDim: Math.min(preset.maxDim, 640),
+            exportScale: 1,
+          })
+            .then(async ({ buffer, ms }) => {
+              if (!alive) return
+              const blob = await imageDataToBlob(buffer)
+              if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current)
+              const url = URL.createObjectURL(blob)
+              resultUrlRef.current = url
+              resultBlobRef.current = blob
+              setResultUrl(url)
+              setResultSize({ w: buffer.width, h: buffer.height })
+              setProcMs(ms)
+              setBusy(false)
+            })
+            .catch(() => {})
+            .finally(() => {
+              dithering = false
+            })
+        } else {
+          dithering = false
+        }
+      }
+      animRef.current = requestAnimationFrame(loop)
+    }
+    setBusy(true)
+    animRef.current = requestAnimationFrame(loop)
+    return () => {
+      alive = false
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+    }
+  }, [
+    preset.genType,
+    preset.genAnimate,
+    preset.genSpeed,
+    preset.genValue,
+    preset.genWidth,
+    preset.genHeight,
+    preset.genLabel,
+    preset.genAccent,
+    preset.algorithm,
+    preset.threshold,
+    preset.pixelSize,
+    preset.seed,
+    preset.darkHex,
+    preset.lightHex,
+    preset.brightness,
+    preset.saturation,
+    preset.noise,
+    preset.strength,
+    preset.softness,
+    preset.gamma,
+    preset.contrast,
+    preset.edgeAware,
+    preset.colorMode,
+    preset.paletteHex,
+    preset.invert,
+    preset.serpentine,
+    preset.cellSize,
+    preset.maxDim,
+    buildGenBuffer,
+    commitGenSource,
+    runWorker,
+  ])
+
+  // Process static sources (upload / sample / still gen)
   useEffect(() => {
     if (!source || !sourceBufRef.current) return
+    if (preset.genType && preset.genAnimate) return // handled by anim loop
     const gen = ++processGen.current
     setBusy(true)
     const t = window.setTimeout(() => {
@@ -764,7 +922,141 @@ export default function App() {
             </div>
           </div>
 
+          <div className="grid grid-cols-3 border-b border-line">
+            {([
+              ['dither', 'Dither'],
+              ['tone', 'Tone'],
+              ['generate', 'Generate'],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPanel(id)}
+                className={`py-2 text-[12px] font-medium ${
+                  panel === id
+                    ? 'border-b-2 border-ink text-ink'
+                    : 'text-muted hover:text-ink'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-col gap-4 p-4">
+            {panel === 'generate' && (
+              <GeneratePanel
+                genType={preset.genType}
+                genValue={preset.genValue}
+                genWidth={preset.genWidth}
+                genHeight={preset.genHeight}
+                genAnimate={preset.genAnimate}
+                genSpeed={preset.genSpeed}
+                genLabel={preset.genLabel}
+                genAccent={preset.genAccent}
+                onChange={(p) => patch(p as Partial<StudioPreset>)}
+                onApply={() => {
+                  if (!preset.genType) {
+                    patch({ genType: 'bar-chart' as GeneratorId })
+                  }
+                  const built = buildGenBuffer(genPhase)
+                  if (built) commitGenSource(built.canvas, built.buf)
+                  setPanel('dither')
+                }}
+                onStop={() => {
+                  patch({ genType: undefined, genAnimate: false })
+                }}
+              />
+            )}
+
+            {panel === 'tone' && (
+              <>
+                <div>
+                  <FieldLabel value={preset.brightness}>Brightness</FieldLabel>
+                  <input
+                    type="range"
+                    min={-100}
+                    max={100}
+                    value={preset.brightness}
+                    onChange={(e) => patch({ brightness: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <FieldLabel value={preset.saturation.toFixed(2)}>Saturation</FieldLabel>
+                  <input
+                    type="range"
+                    min={0}
+                    max={200}
+                    value={Math.round(preset.saturation * 100)}
+                    onChange={(e) => patch({ saturation: Number(e.target.value) / 100 })}
+                  />
+                </div>
+                <div>
+                  <FieldLabel value={preset.gamma.toFixed(2)}>Gamma</FieldLabel>
+                  <input
+                    type="range"
+                    min={40}
+                    max={240}
+                    value={Math.round(preset.gamma * 100)}
+                    onChange={(e) => patch({ gamma: Number(e.target.value) / 100 })}
+                  />
+                </div>
+                <div>
+                  <FieldLabel value={preset.contrast.toFixed(2)}>Contrast</FieldLabel>
+                  <input
+                    type="range"
+                    min={50}
+                    max={200}
+                    value={Math.round(preset.contrast * 100)}
+                    onChange={(e) => patch({ contrast: Number(e.target.value) / 100 })}
+                  />
+                </div>
+                <div>
+                  <FieldLabel value={Math.round(preset.noise * 100)}>Noise</FieldLabel>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(preset.noise * 100)}
+                    onChange={(e) => patch({ noise: Number(e.target.value) / 100 })}
+                  />
+                </div>
+                <div>
+                  <FieldLabel value={Math.round(preset.strength * 100) + '%'}>Strength</FieldLabel>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(preset.strength * 100)}
+                    onChange={(e) => patch({ strength: Number(e.target.value) / 100 })}
+                  />
+                  <p className="mt-1 text-[11px] text-faint">Blend dithered result with preprocessed source.</p>
+                </div>
+                <div>
+                  <FieldLabel value={preset.softness.toFixed(1)}>Softness</FieldLabel>
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    value={Math.round(preset.softness * 10)}
+                    onChange={(e) => patch({ softness: Number(e.target.value) / 10 })}
+                  />
+                  <p className="mt-1 text-[11px] text-faint">Pre-blur before dither (0–3).</p>
+                </div>
+                <div>
+                  <FieldLabel value={preset.seed}>Seed</FieldLabel>
+                  <input
+                    type="number"
+                    value={preset.seed}
+                    onChange={(e) => patch({ seed: Number(e.target.value) || 0 })}
+                    className="w-full rounded-md border border-line bg-canvas px-2 py-1.5 font-mono text-[13px]"
+                  />
+                </div>
+              </>
+            )}
+
+            {panel === 'dither' && (
+            <>
             <div>
               <FieldLabel>Algorithm</FieldLabel>
               <div className="relative">
@@ -868,38 +1160,6 @@ export default function App() {
                 />
               </div>
             )}
-
-            <div>
-              <FieldLabel value={preset.gamma.toFixed(2)}>Gamma</FieldLabel>
-              <input
-                type="range"
-                min={40}
-                max={240}
-                value={Math.round(preset.gamma * 100)}
-                onChange={(e) => patch({ gamma: Number(e.target.value) / 100 })}
-              />
-            </div>
-
-            <div>
-              <FieldLabel value={preset.contrast.toFixed(2)}>Contrast</FieldLabel>
-              <input
-                type="range"
-                min={50}
-                max={200}
-                value={Math.round(preset.contrast * 100)}
-                onChange={(e) => patch({ contrast: Number(e.target.value) / 100 })}
-              />
-            </div>
-
-            <div>
-              <FieldLabel value={preset.seed}>Seed</FieldLabel>
-              <input
-                type="number"
-                value={preset.seed}
-                onChange={(e) => patch({ seed: Number(e.target.value) || 0 })}
-                className="w-full rounded-md border border-line bg-canvas px-2 py-1.5 font-mono text-[13px]"
-              />
-            </div>
 
             <div>
               <div className="mb-1.5 flex items-center justify-between">
@@ -1039,12 +1299,15 @@ export default function App() {
                 {error}
               </p>
             )}
+            </>
+            )}
           </div>
 
           <div className="mt-auto border-t border-line px-4 py-3">
             <p className="text-[11px] leading-relaxed text-faint">
-              {activeMeta.name}. Keys: 1-9 algo, arrows threshold, space compare, ⌘S export, ⌘Z undo.
-              Local only.
+              {activeMeta.name}
+              {preset.genType ? ` · gen ${preset.genType}` : ''}.
+              Keys: 1-9 algo, arrows threshold, space compare, ⌘S export. Generate tab builds charts & controls.
             </p>
           </div>
         </aside>

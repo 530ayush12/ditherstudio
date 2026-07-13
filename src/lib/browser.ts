@@ -56,3 +56,13 @@ export function imageDataToBlob(buffer: PixelBuffer, type = 'image/png'): Promis
 export function bufferToObjectUrl(buffer: PixelBuffer): Promise<string> {
   return imageDataToBlob(buffer).then((blob) => URL.createObjectURL(blob))
 }
+
+export function canvasToBuffer(canvas: HTMLCanvasElement): PixelBuffer {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  return createPixelBuffer(canvas.width, canvas.height, imageData.data)
+}
+
+export function imageDataToBuffer(imageData: ImageData): PixelBuffer {
+  return createPixelBuffer(imageData.width, imageData.height, imageData.data)
+}

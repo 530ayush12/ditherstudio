@@ -72,6 +72,16 @@ export interface DitherOptions {
   edgeAware: boolean
   /** Diffuse error in RGB instead of luminance (multi-color). */
   colorMode: boolean
+  /** Brightness offset -100..100 */
+  brightness: number
+  /** Saturation multiplier 0..2 (1 = unchanged) */
+  saturation: number
+  /** Pre-dither noise amount 0..1 */
+  noise: number
+  /** Blend dithered vs preprocessed original 0..1 (1 = full dither) */
+  strength: number
+  /** Softness: blur radius before dither 0..3 */
+  softness: number
 }
 
 export const DEFAULT_DITHER_OPTIONS: DitherOptions = {
@@ -87,6 +97,11 @@ export const DEFAULT_DITHER_OPTIONS: DitherOptions = {
   contrast: 1,
   edgeAware: false,
   colorMode: false,
+  brightness: 0,
+  saturation: 1,
+  noise: 0,
+  strength: 1,
+  softness: 0,
 }
 
 export const PALETTE_PRESETS: { id: string; name: string; colors: string[] }[] = [
@@ -264,9 +279,79 @@ function clamp(v: number, lo = 0, hi = 255): number {
 
 function applyGammaContrast(v: number, gamma: number, contrast: number): number {
   let x = v / 255
-  if (gamma !== 1) x = Math.pow(x, 1 / gamma)
+  if (gamma !== 1) x = Math.pow(Math.max(0, x), 1 / gamma)
   if (contrast !== 1) x = (x - 0.5) * contrast + 0.5
   return clamp(x * 255)
+}
+
+function applySatBright(r: number, g: number, b: number, sat: number, bright: number): Rgb {
+  // Rec.601 luma mix for saturation
+  const y = 0.299 * r + 0.587 * g + 0.114 * b
+  let nr = y + (r - y) * sat
+  let ng = y + (g - y) * sat
+  let nb = y + (b - y) * sat
+  nr += bright
+  ng += bright
+  nb += bright
+  return [clamp(nr), clamp(ng), clamp(nb)]
+}
+
+/** Box blur for softness (odd kernel). */
+function softBlur(buffer: PixelBuffer, radius: number): PixelBuffer {
+  const r = Math.max(0, Math.min(3, Math.round(radius)))
+  if (r === 0) return buffer
+  const { width, height, data } = buffer
+  const out = createPixelBuffer(width, height)
+  const tmp = new Float32Array(width * height * 4)
+  // horizontal
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let rs = 0
+      let gs = 0
+      let bs = 0
+      let as = 0
+      let n = 0
+      for (let k = -r; k <= r; k++) {
+        const xx = Math.min(width - 1, Math.max(0, x + k))
+        const i = (y * width + xx) * 4
+        rs += data[i]
+        gs += data[i + 1]
+        bs += data[i + 2]
+        as += data[i + 3]
+        n++
+      }
+      const di = (y * width + x) * 4
+      tmp[di] = rs / n
+      tmp[di + 1] = gs / n
+      tmp[di + 2] = bs / n
+      tmp[di + 3] = as / n
+    }
+  }
+  // vertical
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let rs = 0
+      let gs = 0
+      let bs = 0
+      let as = 0
+      let n = 0
+      for (let k = -r; k <= r; k++) {
+        const yy = Math.min(height - 1, Math.max(0, y + k))
+        const i = (yy * width + x) * 4
+        rs += tmp[i]
+        gs += tmp[i + 1]
+        bs += tmp[i + 2]
+        as += tmp[i + 3]
+        n++
+      }
+      const di = (y * width + x) * 4
+      out.data[di] = rs / n
+      out.data[di + 1] = gs / n
+      out.data[di + 2] = bs / n
+      out.data[di + 3] = as / n
+    }
+  }
+  return out
 }
 
 function colorDist2(a: Rgb, b: Rgb): number {
@@ -381,6 +466,11 @@ function normalizeOptions(partial?: Partial<DitherOptions>): DitherOptions {
     seed: (partial?.seed ?? DEFAULT_DITHER_OPTIONS.seed) >>> 0,
     gamma: Math.max(0.4, Math.min(2.4, partial?.gamma ?? 1)),
     contrast: Math.max(0.5, Math.min(2, partial?.contrast ?? 1)),
+    brightness: Math.max(-100, Math.min(100, partial?.brightness ?? 0)),
+    saturation: Math.max(0, Math.min(2, partial?.saturation ?? 1)),
+    noise: Math.max(0, Math.min(1, partial?.noise ?? 0)),
+    strength: Math.max(0, Math.min(1, partial?.strength ?? 1)),
+    softness: Math.max(0, Math.min(3, partial?.softness ?? 0)),
   }
 }
 
@@ -396,6 +486,28 @@ function writeRgb(
   out[i + 3] = alpha
 }
 
+function finalizeOut(
+  out: PixelBuffer,
+  preR: Float32Array,
+  preG: Float32Array,
+  preB: Float32Array,
+  alphaSrc: Uint8ClampedArray,
+  strength: number,
+): PixelBuffer {
+  if (strength >= 0.999) return out
+  const { width, height, data } = out
+  const s = strength
+  const inv = 1 - s
+  for (let idx = 0; idx < width * height; idx++) {
+    const i = idx * 4
+    data[i] = data[i] * s + preR[idx] * inv
+    data[i + 1] = data[i + 1] * s + preG[idx] * inv
+    data[i + 2] = data[i + 2] * s + preB[idx] * inv
+    data[i + 3] = alphaSrc[i + 3]
+  }
+  return out
+}
+
 /**
  * Dither an RGBA buffer. Returns a new buffer (input is not mutated).
  */
@@ -409,22 +521,43 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
   const rng = createRng(options.seed)
   const multi = palette.length > 2 || options.colorMode
 
+  // Optional soft blur pre-pass
+  const srcBuf =
+    options.softness > 0
+      ? softBlur({ width, height, data }, options.softness)
+      : { width, height, data }
+  const src = srcBuf.data
+  const rngPre = createRng(options.seed + 17)
+
   // Preprocess luminance + optional RGB working buffers
   const gray = new Float32Array(width * height)
   const rCh = new Float32Array(width * height)
   const gCh = new Float32Array(width * height)
   const bCh = new Float32Array(width * height)
+  const preR = new Float32Array(width * height)
+  const preG = new Float32Array(width * height)
+  const preB = new Float32Array(width * height)
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = y * width + x
       const i = idx * 4
-      let r = data[i]
-      let g = data[i + 1]
-      let b = data[i + 2]
+      let r = src[i]
+      let g = src[i + 1]
+      let b = src[i + 2]
+      ;[r, g, b] = applySatBright(r, g, b, options.saturation, options.brightness)
       r = applyGammaContrast(r, options.gamma, options.contrast)
       g = applyGammaContrast(g, options.gamma, options.contrast)
       b = applyGammaContrast(b, options.gamma, options.contrast)
+      if (options.noise > 0) {
+        const n = (rngPre() * 2 - 1) * options.noise * 48
+        r = clamp(r + n)
+        g = clamp(g + n)
+        b = clamp(b + n)
+      }
+      preR[idx] = r
+      preG[idx] = g
+      preB[idx] = b
       rCh[idx] = r
       gCh[idx] = g
       bCh[idx] = b
@@ -485,7 +618,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         }
       }
     }
-    return out
+    return finalizeOut(out, preR, preG, preB, data, options.strength)
   }
 
   // --- Bayer / hybrid ordered stage ---
@@ -514,7 +647,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         }
       }
     }
-    if (algo !== 'hybrid') return out
+    if (algo !== 'hybrid') return finalizeOut(out, preR, preG, preB, data, options.strength)
     // Hybrid: take bayer result as starting quant, re-run FS on error from original gray
     // Rebuild working gray from original, use FS with palette
   }
@@ -539,7 +672,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         writeRgb(outData, i, c, data[i + 3])
       }
     }
-    return out
+    return finalizeOut(out, preR, preG, preB, data, options.strength)
   }
 
   // --- Riemersma (Hilbert) ---
@@ -575,7 +708,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         }
       }
     }
-    return out
+    return finalizeOut(out, preR, preG, preB, data, options.strength)
   }
 
   // --- Error diffusion (incl. hybrid second pass base) ---
@@ -591,7 +724,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         writeRgb(outData, idx * 4, quantizeGray(gray[idx], idx), data[idx * 4 + 3])
       }
     }
-    return out
+    return finalizeOut(out, preR, preG, preB, data, options.strength)
   }
 
   // Hybrid: seed gray with residual after bayer (already wrote out) - re-read... simpler: FS from original
@@ -625,7 +758,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
         }
       }
     }
-    return out
+    return finalizeOut(out, preR, preG, preB, data, options.strength)
   }
 
   // Luminance error diffusion
@@ -656,7 +789,7 @@ export function dither(buffer: PixelBuffer, partial?: Partial<DitherOptions>): P
     }
   }
 
-  return out
+  return finalizeOut(out, preR, preG, preB, data, options.strength)
 }
 
 export function upscaleNearest(buffer: PixelBuffer, factor: number): PixelBuffer {
@@ -812,6 +945,11 @@ export function mergeDitherOptions(
     contrast: number
     edgeAware: boolean
     colorMode: boolean
+    brightness: number
+    saturation: number
+    noise: number
+    strength: number
+    softness: number
   }> = {},
 ): DitherOptions {
   const base = { ...DEFAULT_DITHER_OPTIONS }
@@ -836,6 +974,11 @@ export function mergeDitherOptions(
   if (overrides.contrast !== undefined) base.contrast = overrides.contrast
   if (overrides.edgeAware !== undefined) base.edgeAware = overrides.edgeAware
   if (overrides.colorMode !== undefined) base.colorMode = overrides.colorMode
+  if (overrides.brightness !== undefined) base.brightness = overrides.brightness
+  if (overrides.saturation !== undefined) base.saturation = overrides.saturation
+  if (overrides.noise !== undefined) base.noise = overrides.noise
+  if (overrides.strength !== undefined) base.strength = overrides.strength
+  if (overrides.softness !== undefined) base.softness = overrides.softness
   if (overrides.palette) {
     base.palette = overrides.palette.map((c) =>
       typeof c === 'string' ? hexToRgb(c) : (c as Rgb),
