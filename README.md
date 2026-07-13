@@ -12,10 +12,17 @@
 ## Live
 
 - **Studio:** https://ditherstudio.ideatr.dev  
-- **Agent skill:** https://ditherskill.ideatr.dev  
+- **Agent skill + examples:** https://ditherskill.ideatr.dev  
+- **Example pack:** `/examples` in the studio (portrait, landscape, UI, logo, gradient)
 
 ```bash
 npx skills add arjunkshah/ditherskill -g -y
+```
+
+### Regenerate example gallery
+
+```bash
+npm run examples
 ```
 
 ## Web studio

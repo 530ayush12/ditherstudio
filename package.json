@@ -1,9 +1,9 @@
 {
   "name": "ditherstudio",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
-  "description": "Dither any image — web studio, CLI, HTTP API, and library for coding agents",
+  "description": "Dither any image \u2014 web studio, CLI, HTTP API, and library for coding agents",
   "bin": {
     "ditherstudio": "./bin/ditherstudio.mjs"
   },
@@ -21,7 +21,8 @@
     "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
     "serve": "tsx src/server.ts",
-    "dither": "tsx src/cli.ts"
+    "dither": "tsx src/cli.ts",
+    "examples": "tsx scripts/generate-examples.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

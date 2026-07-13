@@ -1,0 +1,157 @@
+{
+  "generatedAt": "2026-07-13T23:46:05.322Z",
+  "sources": [
+    {
+      "id": "portrait",
+      "file": "sources/portrait.png",
+      "width": 480,
+      "height": 560
+    },
+    {
+      "id": "photo",
+      "file": "sources/photo.png",
+      "width": 640,
+      "height": 400
+    },
+    {
+      "id": "ui",
+      "file": "sources/ui.png",
+      "width": 560,
+      "height": 360
+    },
+    {
+      "id": "logo",
+      "file": "sources/logo.png",
+      "width": 400,
+      "height": 400
+    },
+    {
+      "id": "gradient",
+      "file": "sources/gradient.png",
+      "width": 480,
+      "height": 320
+    }
+  ],
+  "demos": [
+    {
+      "id": "portrait-fs",
+      "title": "Portrait · Floyd-Steinberg",
+      "blurb": "Classic error diffusion on continuous tone.",
+      "source": "portrait",
+      "sourceFile": "sources/portrait.png",
+      "resultFile": "results/portrait-fs.png",
+      "algorithm": "floyd-steinberg",
+      "pixelSize": 1
+    },
+    {
+      "id": "portrait-atkinson",
+      "title": "Portrait · Atkinson",
+      "blurb": "Higher contrast Mac print heritage.",
+      "source": "portrait",
+      "sourceFile": "sources/portrait.png",
+      "resultFile": "results/portrait-atkinson.png",
+      "algorithm": "atkinson",
+      "pixelSize": 1
+    },
+    {
+      "id": "photo-blue",
+      "title": "Landscape · Blue noise",
+      "blurb": "Modern grain without ordered lattice.",
+      "source": "photo",
+      "sourceFile": "sources/photo.png",
+      "resultFile": "results/photo-blue.png",
+      "algorithm": "blue-noise",
+      "pixelSize": 1
+    },
+    {
+      "id": "photo-halftone",
+      "title": "Landscape · Halftone",
+      "blurb": "Circular print dots.",
+      "source": "photo",
+      "sourceFile": "sources/photo.png",
+      "resultFile": "results/photo-halftone.png",
+      "algorithm": "halftone",
+      "pixelSize": 1
+    },
+    {
+      "id": "ui-bayer",
+      "title": "UI · Bayer 8×8",
+      "blurb": "Stable ordered texture for interfaces.",
+      "source": "ui",
+      "sourceFile": "sources/ui.png",
+      "resultFile": "results/ui-bayer.png",
+      "algorithm": "bayer-8",
+      "pixelSize": 1
+    },
+    {
+      "id": "ui-gameboy",
+      "title": "UI · Game Boy palette",
+      "blurb": "4-color median-style brand look.",
+      "source": "ui",
+      "sourceFile": "sources/ui.png",
+      "resultFile": "results/ui-gameboy.png",
+      "algorithm": "floyd-steinberg",
+      "pixelSize": 1
+    },
+    {
+      "id": "logo-threshold",
+      "title": "Logo · 1-bit mark",
+      "blurb": "Hard cut for favicons and stamps.",
+      "source": "logo",
+      "sourceFile": "sources/logo.png",
+      "resultFile": "results/logo-threshold.png",
+      "algorithm": "threshold",
+      "pixelSize": 1
+    },
+    {
+      "id": "logo-chunky",
+      "title": "Logo · Chunky Bayer",
+      "blurb": "Pixel size 4 for retro marks.",
+      "source": "logo",
+      "sourceFile": "sources/logo.png",
+      "resultFile": "results/logo-chunky.png",
+      "algorithm": "bayer-4",
+      "pixelSize": 4
+    },
+    {
+      "id": "gradient-hybrid",
+      "title": "Gradient · Hybrid",
+      "blurb": "Bayer bias + error diffusion.",
+      "source": "gradient",
+      "sourceFile": "sources/gradient.png",
+      "resultFile": "results/gradient-hybrid.png",
+      "algorithm": "hybrid",
+      "pixelSize": 1
+    },
+    {
+      "id": "gradient-riemersma",
+      "title": "Gradient · Riemersma",
+      "blurb": "Hilbert-path diffusion.",
+      "source": "gradient",
+      "sourceFile": "sources/gradient.png",
+      "resultFile": "results/gradient-riemersma.png",
+      "algorithm": "riemersma",
+      "pixelSize": 1
+    },
+    {
+      "id": "photo-riso",
+      "title": "Landscape · Riso palette",
+      "blurb": "Multi-ink dual + accent feel.",
+      "source": "photo",
+      "sourceFile": "sources/photo.png",
+      "resultFile": "results/photo-riso.png",
+      "algorithm": "stucki",
+      "pixelSize": 1
+    },
+    {
+      "id": "portrait-chunky",
+      "title": "Portrait · Chunky FS",
+      "blurb": "Pixel size 3 portrait print.",
+      "source": "portrait",
+      "sourceFile": "sources/portrait.png",
+      "resultFile": "results/portrait-chunky.png",
+      "algorithm": "floyd-steinberg",
+      "pixelSize": 3
+    }
+  ]
+}

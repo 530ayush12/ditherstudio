@@ -103,7 +103,11 @@ export default function App() {
   const [resultSize, setResultSize] = useState<{ w: number; h: number } | null>(null)
   const [showAgent, setShowAgent] = useState(false)
   const [showCompareAll, setShowCompareAll] = useState(false)
+  const [showExamples, setShowExamples] = useState(false)
   const [compareThumbs, setCompareThumbs] = useState<Record<string, string>>({})
+  const [examples, setExamples] = useState<
+    { id: string; title: string; blurb: string; source: string; sourceFile: string; resultFile: string; algorithm: string; pixelSize: number }[]
+  >([])
   const [zoom, setZoom] = useState(1)
   const [draggingCompare, setDraggingCompare] = useState(false)
 
@@ -198,34 +202,43 @@ export default function App() {
     [loadFromUrl],
   )
 
+  const loadNamedSample = useCallback(
+    async (name: string, algo?: AlgorithmId, pixelSize?: number) => {
+      const url = `/examples/sources/${name}.png`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`Sample "${name}" not found`)
+      const blob = await res.blob()
+      await loadFile(new File([blob], `${name}.png`, { type: 'image/png' }))
+      const patchOpts: Partial<StudioPreset> = { sample: name }
+      if (algo) patchOpts.algorithm = algo
+      if (pixelSize) patchOpts.pixelSize = pixelSize
+      patch(patchOpts)
+    },
+    [loadFile, patch],
+  )
+
   const loadSample = useCallback(async () => {
-    const w = 720
-    const h = 540
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')!
-    const g = ctx.createLinearGradient(0, 0, w, h)
-    g.addColorStop(0, '#1a1a1a')
-    g.addColorStop(0.35, '#777')
-    g.addColorStop(0.7, '#d0d0d0')
-    g.addColorStop(1, '#f5f5f5')
-    ctx.fillStyle = g
-    ctx.fillRect(0, 0, w, h)
-    const r = ctx.createRadialGradient(w * 0.35, h * 0.4, 8, w * 0.35, h * 0.4, w * 0.5)
-    r.addColorStop(0, 'rgba(255,255,255,0.55)')
-    r.addColorStop(1, 'rgba(0,0,0,0.4)')
-    ctx.fillStyle = r
-    ctx.fillRect(0, 0, w, h)
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'
-    ctx.beginPath()
-    ctx.arc(w * 0.7, h * 0.55, 100, 0, Math.PI * 2)
-    ctx.fill()
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('fail'))), 'image/png')
-    })
-    await loadFile(new File([blob], 'sample.png', { type: 'image/png' }))
-  }, [loadFile])
+    try {
+      await loadNamedSample('portrait', 'floyd-steinberg')
+    } catch {
+      setError('Could not load sample pack')
+    }
+  }, [loadNamedSample])
+
+  // Load examples manifest + deep-link sample
+  useEffect(() => {
+    void fetch('/examples/manifest.json')
+      .then((r) => r.json())
+      .then((m) => setExamples(m.demos || []))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!preset.sample || source) return
+    void loadNamedSample(preset.sample).catch(() => {})
+    // only on first mount when URL has sample
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const clearSource = useCallback(() => {
     setSource((prev) => {
@@ -304,6 +317,34 @@ export default function App() {
     a.click()
     URL.revokeObjectURL(a.href)
   }, [source, preset.algorithm])
+
+  /** Export 32×32 + 16×16 favicon-style PNGs from current result */
+  const downloadFavicon = useCallback(async () => {
+    if (!resultUrl || !sourceBufRef.current) return
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('favicon source failed'))
+      img.src = resultUrl
+    })
+    for (const size of [32, 16]) {
+      const c = document.createElement('canvas')
+      c.width = size
+      c.height = size
+      const ctx = c.getContext('2d')!
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(img, 0, 0, size, size)
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('fail'))), 'image/png')
+      })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `favicon-${size}.png`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    }
+  }, [resultUrl])
 
   const extractPal = useCallback(() => {
     if (!sourceBufRef.current) return
@@ -421,14 +462,31 @@ export default function App() {
               <Terminal size={15} weight="bold" />
               <span className="hidden sm:inline">Agents</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setShowExamples(true)}
+              className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft sm:inline-flex"
+            >
+              Examples
+            </button>
             {source && (
               <button
                 type="button"
                 onClick={() => void runCompareAll()}
-                className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft sm:inline-flex"
+                className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft md:inline-flex"
               >
                 <GridFour size={15} />
                 Compare
+              </button>
+            )}
+            {resultUrl && (
+              <button
+                type="button"
+                onClick={() => void downloadFavicon()}
+                className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft lg:inline-flex"
+                title="Export 32px and 16px favicon PNGs"
+              >
+                Favicon
               </button>
             )}
             <button
@@ -509,9 +567,50 @@ export default function App() {
                   }}
                   className="rounded-md border border-line bg-surface px-4 py-2 text-[13px] font-medium"
                 >
-                  Try sample
+                  Try portrait
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowExamples(true)
+                  }}
+                  className="rounded-md border border-line bg-surface px-4 py-2 text-[13px] font-medium"
+                >
+                  Browse examples
                 </button>
               </div>
+              {examples.length > 0 && (
+                <div
+                  className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {examples.slice(0, 4).map((ex) => (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      onClick={() =>
+                        void loadNamedSample(
+                          ex.source,
+                          ex.algorithm as AlgorithmId,
+                          ex.pixelSize,
+                        )
+                      }
+                      className="overflow-hidden rounded-md border border-line text-left hover:border-ink"
+                    >
+                      <img
+                        src={`/examples/${ex.resultFile}`}
+                        alt={ex.title}
+                        className="aspect-square w-full object-cover"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                      <span className="block truncate px-2 py-1.5 text-[11px] text-muted">
+                        {ex.title}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <p className="mt-4 font-mono text-[11px] text-faint">
                 PNG JPEG WebP GIF SVG · ⌘V paste · ⌘S export
               </p>
@@ -950,6 +1049,60 @@ export default function App() {
           </div>
         </aside>
       </main>
+
+      {/* Examples gallery modal */}
+      {showExamples && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center">
+          <div className="max-h-[90dvh] w-full max-w-4xl overflow-auto rounded-lg border border-line bg-surface p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold">Example pack</h3>
+                <p className="text-[12px] text-muted">
+                  Click to load source + apply the matching algorithm.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExamples(false)}
+                className="rounded border border-line p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {examples.map((ex) => (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => {
+                    void loadNamedSample(ex.source, ex.algorithm as AlgorithmId, ex.pixelSize)
+                    setShowExamples(false)
+                  }}
+                  className="overflow-hidden rounded-md border border-line text-left hover:border-ink"
+                >
+                  <div className="grid grid-cols-2">
+                    <img
+                      src={`/examples/${ex.sourceFile}`}
+                      alt=""
+                      className="aspect-square w-full object-cover"
+                    />
+                    <img
+                      src={`/examples/${ex.resultFile}`}
+                      alt=""
+                      className="aspect-square w-full object-cover"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                  </div>
+                  <div className="border-t border-line px-2 py-1.5">
+                    <p className="text-[12px] font-medium leading-snug">{ex.title}</p>
+                    <p className="font-mono text-[10px] text-faint">{ex.algorithm}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Compare all modal */}
       {showCompareAll && (

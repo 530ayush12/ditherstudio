@@ -26,6 +26,8 @@ export interface StudioPreset {
   exportScale: number
   maxDim: number
   theme: 'light' | 'dark'
+  /** Named sample from /examples/sources */
+  sample?: string
 }
 
 export const DEFAULT_PRESET: StudioPreset = {
@@ -46,6 +48,7 @@ export const DEFAULT_PRESET: StudioPreset = {
   exportScale: 1,
   maxDim: 2400,
   theme: 'light',
+  sample: undefined,
 }
 
 export function presetToDitherOptions(p: StudioPreset): Partial<DitherOptions> {
@@ -85,6 +88,7 @@ export function presetToQuery(p: StudioPreset): string {
   if (p.exportScale !== 1) q.set('scale', String(p.exportScale))
   if (p.maxDim !== 2400) q.set('max', String(p.maxDim))
   if (p.theme === 'dark') q.set('theme', 'dark')
+  if (p.sample) q.set('sample', p.sample)
   if (p.paletteHex.length > 2 || (p.paletteHex[0] !== p.darkHex || p.paletteHex[1] !== p.lightHex)) {
     q.set('pal', p.paletteHex.map((h) => h.replace('#', '')).join(','))
   }
@@ -111,6 +115,7 @@ export function presetFromQuery(search: string): Partial<StudioPreset> {
   if (q.has('scale')) out.exportScale = Number(q.get('scale'))
   if (q.has('max')) out.maxDim = Number(q.get('max'))
   if (q.get('theme') === 'dark') out.theme = 'dark'
+  if (q.has('sample')) out.sample = q.get('sample') || undefined
   if (q.has('pal')) {
     out.paletteHex = q
       .get('pal')!
