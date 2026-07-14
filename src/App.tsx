@@ -84,7 +84,19 @@ function Toggle({
   )
 }
 
+function extractedPalettePatch(buffer: import('./lib/dither').PixelBuffer): Partial<StudioPreset> {
+  const colors = extractPalette(buffer, 6)
+  const hex = colors.map((c) => rgbToHex(c[0], c[1], c[2]))
+  return {
+    paletteHex: hex,
+    darkHex: hex[0],
+    lightHex: hex[hex.length - 1],
+    colorMode: true,
+  }
+}
+
 export default function App() {
+  const initialSearchRef = useRef(typeof window === 'undefined' ? '' : window.location.search)
   const initial = useMemo(() => {
     if (typeof window === 'undefined') return DEFAULT_PRESET
     return mergePreset(DEFAULT_PRESET, presetFromQuery(window.location.search))
@@ -126,6 +138,16 @@ export default function App() {
   const resultBlobRef = useRef<Blob | null>(null)
   const resultUrlRef = useRef<string | null>(null)
   const sourceBufRef = useRef<import('./lib/dither').PixelBuffer | null>(null)
+  const autoPaletteRef = useRef<boolean>((() => {
+    const params = new URLSearchParams(initialSearchRef.current)
+    return !(
+      params.has('pal') ||
+      params.has('palette') ||
+      params.has('dark') ||
+      params.has('light') ||
+      params.has('color')
+    )
+  })())
   const processGen = useRef(0)
   const stageRef = useRef<HTMLDivElement>(null)
   const animRef = useRef<number | null>(null)
@@ -185,6 +207,9 @@ export default function App() {
       img.src = objectUrl
     })
     sourceBufRef.current = imageElementToBuffer(img, 4096)
+    if (autoPaletteRef.current) {
+      patch(extractedPalettePatch(sourceBufRef.current), false)
+    }
     setSource((prev) => {
       if (prev) URL.revokeObjectURL(prev.objectUrl)
       return {
@@ -195,7 +220,7 @@ export default function App() {
         element: img,
       }
     })
-  }, [])
+  }, [patch])
 
   const loadFile = useCallback(
     async (file: File) => {
@@ -513,14 +538,8 @@ export default function App() {
 
   const extractPal = useCallback(() => {
     if (!sourceBufRef.current) return
-    const colors = extractPalette(sourceBufRef.current, 6)
-    const hex = colors.map((c) => rgbToHex(c[0], c[1], c[2]))
-    patch({
-      paletteHex: hex,
-      darkHex: hex[0],
-      lightHex: hex[hex.length - 1],
-      colorMode: true,
-    })
+    autoPaletteRef.current = true
+    patch(extractedPalettePatch(sourceBufRef.current))
   }, [patch])
 
   const runCompareAll = useCallback(async () => {
@@ -896,8 +915,12 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  setPreset(DEFAULT_PRESET)
-                  setHistory([DEFAULT_PRESET])
+                  autoPaletteRef.current = true
+                  const next = sourceBufRef.current
+                    ? mergePreset(DEFAULT_PRESET, extractedPalettePatch(sourceBufRef.current))
+                    : DEFAULT_PRESET
+                  setPreset(next)
+                  setHistory([next])
                   setHistIdx(0)
                 }}
                 className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink"
@@ -1068,14 +1091,15 @@ export default function App() {
                     key={pr.id}
                     type="button"
                     title={pr.name}
-                    onClick={() =>
+                    onClick={() => {
+                      autoPaletteRef.current = false
                       patch({
                         paletteHex: pr.colors,
                         darkHex: pr.colors[0],
                         lightHex: pr.colors[pr.colors.length - 1],
                         colorMode: pr.colors.length > 2,
                       })
-                    }
+                    }}
                     className="flex h-6 overflow-hidden border border-line"
                     style={{ width: 8 + pr.colors.length * 10 }}
                   >
@@ -1092,6 +1116,7 @@ export default function App() {
                       type="color"
                       value={hex}
                       onChange={(e) => {
+                        autoPaletteRef.current = false
                         const next = [...preset.paletteHex]
                         next[i] = e.target.value
                         patch({
@@ -1108,6 +1133,7 @@ export default function App() {
                       className="text-faint hover:text-ink"
                       onClick={() => {
                         if (preset.paletteHex.length <= 2) return
+                        autoPaletteRef.current = false
                         const next = preset.paletteHex.filter((_, j) => j !== i)
                         patch({
                           paletteHex: next,
@@ -1125,7 +1151,10 @@ export default function App() {
                 {preset.paletteHex.length < 12 && (
                   <button
                     type="button"
-                    onClick={() => patch({ paletteHex: [...preset.paletteHex, '#888888'], colorMode: true })}
+                    onClick={() => {
+                      autoPaletteRef.current = false
+                      patch({ paletteHex: [...preset.paletteHex, '#888888'], colorMode: true })
+                    }}
                     className="border border-dashed border-line px-2 py-1 text-[12px] text-muted"
                   >
                     +
@@ -1155,6 +1184,7 @@ export default function App() {
                       const f = e.target.files?.[0]
                       if (!f) return
                       try {
+                        autoPaletteRef.current = false
                         setPreset(presetFromJson(await f.text()))
                       } catch {
                         setError('Invalid preset JSON')
