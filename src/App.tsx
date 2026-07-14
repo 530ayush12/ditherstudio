@@ -95,6 +95,8 @@ function extractedPalettePatch(buffer: import('./lib/dither').PixelBuffer): Part
   }
 }
 
+const FEATURED_EXAMPLE_IDS = ['portrait-fs', 'photo-blue', 'ui-bayer', 'logo-threshold']
+
 export default function App() {
   const initialSearchRef = useRef(typeof window === 'undefined' ? '' : window.location.search)
   const initial = useMemo(() => {
@@ -731,47 +733,63 @@ export default function App() {
                 </button>
               </div>
               {(() => {
-                const featured = ['portrait-fs', 'photo-blue', 'ui-bayer', 'logo-threshold']
+                const featured = FEATURED_EXAMPLE_IDS
                   .map((id) => examples.find((e) => e.id === id))
                   .filter(Boolean) as typeof examples
                 const cards = featured.length === 4 ? featured : examples.slice(0, 4)
                 if (!cards.length) return null
                 return (
                 <div
-                  className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4"
+                  className="mt-8 grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:grid-cols-4"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {cards.map((ex) => (
-                    <button
-                      key={ex.id}
-                      type="button"
-                      onClick={() =>
-                        void loadNamedSample(
-                          ex.source,
-                          ex.algorithm as AlgorithmId,
-                          ex.pixelSize,
-                        )
-                      }
-                      className="overflow-hidden border border-line text-left hover:border-ink"
-                    >
-                      <div className="grid grid-cols-2">
-                        <img
-                          src={`/examples/${ex.sourceFile}`}
-                          alt=""
-                          className="aspect-square w-full object-cover"
-                        />
-                        <img
-                          src={`/examples/${ex.resultFile}`}
-                          alt={ex.title}
-                          className="aspect-square w-full object-cover"
-                          style={{ imageRendering: 'pixelated' }}
-                        />
-                      </div>
-                      <span className="block truncate px-2 py-1.5 text-[11px] text-muted">
-                        {ex.title}
-                      </span>
-                    </button>
-                  ))}
+                  {cards.map((ex) => {
+                    const [subject = ex.title, method = ex.algorithm] = ex.title
+                      .split('·')
+                      .map((part) => part.trim())
+                    return (
+                      <button
+                        key={ex.id}
+                        type="button"
+                        onClick={() =>
+                          void loadNamedSample(
+                            ex.source,
+                            ex.algorithm as AlgorithmId,
+                            ex.pixelSize,
+                          )
+                        }
+                        className="group overflow-hidden rounded-[7px] border border-line bg-surface text-left shadow-[0_10px_28px_rgba(17,17,17,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-ink hover:shadow-[0_18px_42px_rgba(17,17,17,0.12)] focus:outline-none focus-visible:border-ink"
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden bg-fill">
+                          <img
+                            src={`/examples/${ex.resultFile}`}
+                            alt={ex.title}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]"
+                            style={{ imageRendering: 'pixelated' }}
+                          />
+                          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
+                          <div className="absolute left-2 top-2 overflow-hidden rounded-[4px] border border-white/70 bg-surface shadow-sm">
+                            <img
+                              src={`/examples/${ex.sourceFile}`}
+                              alt=""
+                              className="h-10 w-10 object-cover sm:h-11 sm:w-11"
+                            />
+                          </div>
+                          <span className="absolute bottom-2 left-2 rounded-[4px] bg-white/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-ink">
+                            {ex.algorithm}
+                          </span>
+                        </div>
+                        <div className="px-2.5 py-2">
+                          <p className="truncate text-[12px] font-semibold leading-tight text-ink">
+                            {subject}
+                          </p>
+                          <p className="mt-0.5 truncate text-[11px] leading-tight text-muted">
+                            {method}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
                 )
               })()}
