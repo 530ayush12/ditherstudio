@@ -28,6 +28,7 @@
     "src/workers/dither.worker.ts",
     "src/lib/generate.ts",
     "src/components/GeneratePanel.tsx",
+    "src/components/Collapsible.tsx",
     "src/index.css"
   ],
   "exclude": ["src/cli.ts", "src/server.ts", "src/index.ts", "src/lib/node.ts"]

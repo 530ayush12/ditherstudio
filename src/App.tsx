@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowCounterClockwise,
   CaretDown,
-  Copy,
   DownloadSimple,
   GridFour,
   Image as ImageIcon,
@@ -10,11 +9,11 @@ import {
   MagnifyingGlassPlus,
   Moon,
   Sun,
-  Terminal,
   Trash,
   UploadSimple,
   X,
 } from '@phosphor-icons/react'
+import { Collapsible } from './components/Collapsible'
 import {
   ALGORITHMS,
   type AlgorithmId,
@@ -103,7 +102,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [resultSize, setResultSize] = useState<{ w: number; h: number } | null>(null)
-  const [showAgent, setShowAgent] = useState(false)
   const [showCompareAll, setShowCompareAll] = useState(false)
   const [showExamples, setShowExamples] = useState(false)
   const [compareThumbs, setCompareThumbs] = useState<Record<string, string>>({})
@@ -112,8 +110,17 @@ export default function App() {
   >([])
   const [zoom, setZoom] = useState(1)
   const [draggingCompare, setDraggingCompare] = useState(false)
-  const [panel, setPanel] = useState<'dither' | 'tone' | 'generate'>('dither')
   const [genPhase, setGenPhase] = useState(0)
+  const [openSec, setOpenSec] = useState<Record<string, boolean>>({
+    algorithm: true,
+    size: false,
+    tone: false,
+    palette: true,
+    options: false,
+    generate: false,
+  })
+  const toggleSec = (key: string) =>
+    setOpenSec((s) => ({ ...s, [key]: !s[key] }))
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultBlobRef = useRef<Blob | null>(null)
@@ -571,10 +578,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [download, undo, redo, source, patch, preset.threshold])
 
-  const copyInstall = () => {
-    void navigator.clipboard.writeText('npx skills add arjunkshah/ditherskill -g -y')
-  }
-
   const copyPreset = () => {
     void navigator.clipboard.writeText(presetToJson(preset))
   }
@@ -589,9 +592,12 @@ export default function App() {
   const dark = preset.theme === 'dark'
 
   return (
-    <div className={`min-h-[100dvh] ${dark ? 'theme-dark' : ''} bg-canvas text-ink`}>
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6">
+    <div
+      className={`flex h-[100dvh] max-h-[100dvh] overflow-hidden ${dark ? 'theme-dark' : ''} bg-canvas text-ink`}
+    >
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <header className="z-40 shrink-0 border-b border-line bg-surface">
+        <div className="flex h-12 items-center justify-between gap-3 px-3 sm:px-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="grid h-6 w-6 shrink-0 grid-cols-2 grid-rows-2 gap-px bg-line" aria-hidden>
               <span className="bg-ink" />
@@ -605,25 +611,16 @@ export default function App() {
             <button
               type="button"
               onClick={() => patch({ theme: dark ? 'light' : 'dark' }, false)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line text-ink-soft hover:border-line-strong"
-              aria-label="Toggle theme"
+              className="inline-flex h-8 w-8 items-center justify-center border border-line text-ink-soft hover:border-line-strong"
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={dark ? 'Light mode' : 'Dark mode'}
             >
-              {dark ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAgent((v) => !v)}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] ${
-                showAgent ? 'border-ink bg-ink text-surface' : 'border-line bg-surface text-ink-soft'
-              }`}
-            >
-              <Terminal size={15} weight="bold" />
-              <span className="hidden sm:inline">Agents</span>
+              {dark ? <Sun size={15} weight="bold" /> : <Moon size={15} weight="bold" />}
             </button>
             <button
               type="button"
               onClick={() => setShowExamples(true)}
-              className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft sm:inline-flex"
+              className="hidden items-center gap-1.5 border border-line px-2.5 py-1.5 text-[13px] text-ink-soft sm:inline-flex"
             >
               Examples
             </button>
@@ -631,7 +628,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => void runCompareAll()}
-                className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft md:inline-flex"
+                className="hidden items-center gap-1.5 border border-line px-2.5 py-1.5 text-[13px] text-ink-soft md:inline-flex"
               >
                 <GridFour size={15} />
                 Compare
@@ -641,7 +638,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => void downloadFavicon()}
-                className="hidden items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-[13px] text-ink-soft lg:inline-flex"
+                className="hidden items-center gap-1.5 border border-line px-2.5 py-1.5 text-[13px] text-ink-soft lg:inline-flex"
                 title="Export 32px and 16px favicon PNGs"
               >
                 Favicon
@@ -651,7 +648,7 @@ export default function App() {
               type="button"
               onClick={download}
               disabled={!resultUrl}
-              className="inline-flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[13px] font-medium text-surface disabled:opacity-30 active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 bg-ink px-3 py-1.5 text-[13px] font-medium text-surface disabled:opacity-30 active:scale-[0.98]"
             >
               <DownloadSimple size={15} weight="bold" />
               Export
@@ -660,32 +657,8 @@ export default function App() {
         </div>
       </header>
 
-      {showAgent && (
-        <div className="border-b border-line bg-surface">
-          <div className="mx-auto grid max-w-[1440px] gap-4 px-4 py-4 sm:px-6 lg:grid-cols-3">
-            <pre className="overflow-x-auto rounded-md border border-line bg-canvas p-3 font-mono text-[11px] text-ink-soft">
-              {`npx skills add arjunkshah/ditherskill -g -y\n\nnpm run cli -- in.png -o out.png -a ${preset.algorithm} -t ${preset.threshold} --seed ${preset.seed} --json`}
-            </pre>
-            <pre className="overflow-x-auto rounded-md border border-line bg-canvas p-3 font-mono text-[11px] text-ink-soft">
-              {`npm run serve\ncurl -F "file=@in.png" "http://127.0.0.1:8787/v1/dither?algorithm=${preset.algorithm}&threshold=${preset.threshold}" -o out.png`}
-            </pre>
-            <div className="flex flex-col gap-2">
-              <button type="button" onClick={copyInstall} className="rounded-md border border-line px-3 py-2 text-left text-[13px] hover:border-line-strong">
-                <Copy size={14} className="mr-1 inline" /> Copy skill install
-              </button>
-              <button type="button" onClick={copyPreset} className="rounded-md border border-line px-3 py-2 text-left text-[13px] hover:border-line-strong">
-                <Copy size={14} className="mr-1 inline" /> Copy preset JSON
-              </button>
-              <a href="https://ditherskill.ideatr.dev" className="text-[12px] text-muted underline" target="_blank" rel="noreferrer">
-                ditherskill.ideatr.dev
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="relative flex min-h-[55dvh] flex-col border-b border-line lg:min-h-[calc(100dvh-3.5rem)] lg:border-b-0 lg:border-r">
+      <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <section className="relative flex min-h-0 flex-col border-b border-line lg:border-b-0 lg:border-r">
           {!source ? (
             <div
               role="button"
@@ -700,8 +673,8 @@ export default function App() {
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`m-4 flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 transition sm:m-6 ${
-                dragOver ? 'border-ink bg-fill' : 'border-line-strong bg-surface hover:border-muted'
+              className={`flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center border-0 px-6 py-10 transition ${
+                dragOver ? 'bg-fill' : 'bg-canvas hover:bg-fill/40'
               }`}
             >
               <div className="mb-5 grid h-12 w-12 place-items-center rounded-md border border-line bg-canvas">
@@ -738,12 +711,18 @@ export default function App() {
                   Browse examples
                 </button>
               </div>
-              {examples.length > 0 && (
+              {(() => {
+                const featured = ['portrait-fs', 'photo-blue', 'ui-bayer', 'logo-threshold']
+                  .map((id) => examples.find((e) => e.id === id))
+                  .filter(Boolean) as typeof examples
+                const cards = featured.length === 4 ? featured : examples.slice(0, 4)
+                if (!cards.length) return null
+                return (
                 <div
                   className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {examples.slice(0, 4).map((ex) => (
+                  {cards.map((ex) => (
                     <button
                       key={ex.id}
                       type="button"
@@ -754,21 +733,29 @@ export default function App() {
                           ex.pixelSize,
                         )
                       }
-                      className="overflow-hidden rounded-md border border-line text-left hover:border-ink"
+                      className="overflow-hidden border border-line text-left hover:border-ink"
                     >
-                      <img
-                        src={`/examples/${ex.resultFile}`}
-                        alt={ex.title}
-                        className="aspect-square w-full object-cover"
-                        style={{ imageRendering: 'pixelated' }}
-                      />
+                      <div className="grid grid-cols-2">
+                        <img
+                          src={`/examples/${ex.sourceFile}`}
+                          alt=""
+                          className="aspect-square w-full object-cover"
+                        />
+                        <img
+                          src={`/examples/${ex.resultFile}`}
+                          alt={ex.title}
+                          className="aspect-square w-full object-cover"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                      </div>
                       <span className="block truncate px-2 py-1.5 text-[11px] text-muted">
                         {ex.title}
                       </span>
                     </button>
                   ))}
                 </div>
-              )}
+                )
+              })()}
               <p className="mt-4 font-mono text-[11px] text-faint">
                 PNG JPEG WebP GIF SVG · ⌘V paste · ⌘S export
               </p>
@@ -810,17 +797,17 @@ export default function App() {
 
               <div
                 ref={stageRef}
-                className="stage-grid relative flex flex-1 items-center justify-center overflow-auto p-4 sm:p-6"
+                className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-canvas p-3 sm:p-5"
               >
                 <div
-                  className="relative border border-line bg-surface shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+                  className="relative max-h-full max-w-full"
                   style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
                 >
-                  <div className="relative inline-block max-h-[min(65dvh,680px)] max-w-full">
+                  <div className="relative inline-block max-h-[calc(100dvh-9.5rem)] max-w-full">
                     <img
                       src={source.objectUrl}
                       alt="Original"
-                      className="block max-h-[min(65dvh,680px)] max-w-full object-contain select-none"
+                      className="block max-h-[calc(100dvh-9.5rem)] max-w-full object-contain select-none"
                       draggable={false}
                     />
                     {resultUrl && (
@@ -837,7 +824,6 @@ export default function App() {
                         />
                       </div>
                     )}
-                    {/* Drag handle for compare */}
                     <div
                       className="absolute inset-y-0 z-10 w-3 -translate-x-1/2 cursor-ew-resize"
                       style={{ left: `${100 - compare}%` }}
@@ -900,8 +886,8 @@ export default function App() {
           />
         </section>
 
-        <aside className="flex flex-col bg-surface lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto">
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+        <aside className="flex min-h-0 flex-col border-t border-line bg-surface lg:border-t-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
             <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Controls</h2>
             <div className="flex gap-2">
               <button type="button" onClick={undo} className="text-[12px] text-muted hover:text-ink" title="Undo ⌘Z">
@@ -922,141 +908,13 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 border-b border-line">
-            {([
-              ['dither', 'Dither'],
-              ['tone', 'Tone'],
-              ['generate', 'Generate'],
-            ] as const).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setPanel(id)}
-                className={`py-2 text-[12px] font-medium ${
-                  panel === id
-                    ? 'border-b-2 border-ink text-ink'
-                    : 'text-muted hover:text-ink'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-4 p-4">
-            {panel === 'generate' && (
-              <GeneratePanel
-                genType={preset.genType}
-                genValue={preset.genValue}
-                genWidth={preset.genWidth}
-                genHeight={preset.genHeight}
-                genAnimate={preset.genAnimate}
-                genSpeed={preset.genSpeed}
-                genLabel={preset.genLabel}
-                genAccent={preset.genAccent}
-                onChange={(p) => patch(p as Partial<StudioPreset>)}
-                onApply={() => {
-                  if (!preset.genType) {
-                    patch({ genType: 'bar-chart' as GeneratorId })
-                  }
-                  const built = buildGenBuffer(genPhase)
-                  if (built) commitGenSource(built.canvas, built.buf)
-                  setPanel('dither')
-                }}
-                onStop={() => {
-                  patch({ genType: undefined, genAnimate: false })
-                }}
-              />
-            )}
-
-            {panel === 'tone' && (
-              <>
-                <div>
-                  <FieldLabel value={preset.brightness}>Brightness</FieldLabel>
-                  <input
-                    type="range"
-                    min={-100}
-                    max={100}
-                    value={preset.brightness}
-                    onChange={(e) => patch({ brightness: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel value={preset.saturation.toFixed(2)}>Saturation</FieldLabel>
-                  <input
-                    type="range"
-                    min={0}
-                    max={200}
-                    value={Math.round(preset.saturation * 100)}
-                    onChange={(e) => patch({ saturation: Number(e.target.value) / 100 })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel value={preset.gamma.toFixed(2)}>Gamma</FieldLabel>
-                  <input
-                    type="range"
-                    min={40}
-                    max={240}
-                    value={Math.round(preset.gamma * 100)}
-                    onChange={(e) => patch({ gamma: Number(e.target.value) / 100 })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel value={preset.contrast.toFixed(2)}>Contrast</FieldLabel>
-                  <input
-                    type="range"
-                    min={50}
-                    max={200}
-                    value={Math.round(preset.contrast * 100)}
-                    onChange={(e) => patch({ contrast: Number(e.target.value) / 100 })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel value={Math.round(preset.noise * 100)}>Noise</FieldLabel>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(preset.noise * 100)}
-                    onChange={(e) => patch({ noise: Number(e.target.value) / 100 })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel value={Math.round(preset.strength * 100) + '%'}>Strength</FieldLabel>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(preset.strength * 100)}
-                    onChange={(e) => patch({ strength: Number(e.target.value) / 100 })}
-                  />
-                  <p className="mt-1 text-[11px] text-faint">Blend dithered result with preprocessed source.</p>
-                </div>
-                <div>
-                  <FieldLabel value={preset.softness.toFixed(1)}>Softness</FieldLabel>
-                  <input
-                    type="range"
-                    min={0}
-                    max={30}
-                    value={Math.round(preset.softness * 10)}
-                    onChange={(e) => patch({ softness: Number(e.target.value) / 10 })}
-                  />
-                  <p className="mt-1 text-[11px] text-faint">Pre-blur before dither (0–3).</p>
-                </div>
-                <div>
-                  <FieldLabel value={preset.seed}>Seed</FieldLabel>
-                  <input
-                    type="number"
-                    value={preset.seed}
-                    onChange={(e) => patch({ seed: Number(e.target.value) || 0 })}
-                    className="w-full rounded-md border border-line bg-canvas px-2 py-1.5 font-mono text-[13px]"
-                  />
-                </div>
-              </>
-            )}
-
-            {panel === 'dither' && (
-            <>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <Collapsible
+              title="Algorithm"
+              open={openSec.algorithm}
+              onToggle={() => toggleSec('algorithm')}
+              badge={activeMeta.name}
+            >
             <div>
               <FieldLabel>Algorithm</FieldLabel>
               <div className="relative">
@@ -1081,7 +939,7 @@ export default function App() {
                       key={id}
                       type="button"
                       onClick={() => patch({ algorithm: id })}
-                      className={`rounded-md border px-2 py-1.5 text-left text-[11px] ${
+                      className={`border px-2 py-1.5 text-left text-[11px] ${
                         preset.algorithm === id
                           ? 'border-ink bg-ink text-surface'
                           : 'border-line bg-canvas text-ink-soft'
@@ -1092,80 +950,114 @@ export default function App() {
                   ),
                 )}
               </div>
-            </div>
-
-            <div>
-              <FieldLabel value={preset.threshold}>Threshold</FieldLabel>
-              <input
-                type="range"
-                min={0}
-                max={255}
-                value={preset.threshold}
-                onChange={(e) => patch({ threshold: Number(e.target.value) })}
-              />
-            </div>
-
-            <div>
-              <FieldLabel value={`${preset.pixelSize}x`}>Pixel size</FieldLabel>
-              <input
-                type="range"
-                min={1}
-                max={12}
-                value={preset.pixelSize}
-                onChange={(e) => patch({ pixelSize: Number(e.target.value) })}
-              />
-            </div>
-
-            <div>
-              <FieldLabel value={`${preset.exportScale}x`}>Export scale</FieldLabel>
-              <div className="grid grid-cols-4 gap-1">
-                {[1, 2, 3, 4].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => patch({ exportScale: s })}
-                    className={`rounded-md border py-1.5 text-[12px] font-mono ${
-                      preset.exportScale === s
-                        ? 'border-ink bg-ink text-surface'
-                        : 'border-line bg-canvas'
-                    }`}
-                  >
-                    {s}×
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <FieldLabel value={preset.maxDim >= 4000 ? 'full' : preset.maxDim}>Quality max edge</FieldLabel>
-              <input
-                type="range"
-                min={800}
-                max={4096}
-                step={100}
-                value={preset.maxDim}
-                onChange={(e) => patch({ maxDim: Number(e.target.value) })}
-              />
-            </div>
-
-            {preset.algorithm === 'halftone' && (
-              <div>
-                <FieldLabel value={`${preset.cellSize}px`}>Dot cell</FieldLabel>
+              <div className="mt-3">
+                <FieldLabel value={preset.threshold}>Threshold</FieldLabel>
                 <input
                   type="range"
-                  min={2}
-                  max={24}
-                  value={preset.cellSize}
-                  onChange={(e) => patch({ cellSize: Number(e.target.value) })}
+                  min={0}
+                  max={255}
+                  value={preset.threshold}
+                  onChange={(e) => patch({ threshold: Number(e.target.value) })}
                 />
               </div>
-            )}
+              {preset.algorithm === 'halftone' && (
+                <div className="mt-3">
+                  <FieldLabel value={`${preset.cellSize}px`}>Dot cell</FieldLabel>
+                  <input
+                    type="range"
+                    min={2}
+                    max={24}
+                    value={preset.cellSize}
+                    onChange={(e) => patch({ cellSize: Number(e.target.value) })}
+                  />
+                </div>
+              )}
+            </div>
+            </Collapsible>
 
-            <div>
+            <Collapsible title="Size & export" open={openSec.size} onToggle={() => toggleSec('size')}>
+              <div>
+                <FieldLabel value={`${preset.pixelSize}x`}>Pixel size</FieldLabel>
+                <input
+                  type="range"
+                  min={1}
+                  max={12}
+                  value={preset.pixelSize}
+                  onChange={(e) => patch({ pixelSize: Number(e.target.value) })}
+                />
+              </div>
+              <div>
+                <FieldLabel value={`${preset.exportScale}x`}>Export scale</FieldLabel>
+                <div className="grid grid-cols-4 gap-1">
+                  {[1, 2, 3, 4].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => patch({ exportScale: s })}
+                      className={`border py-1.5 text-[12px] font-mono ${
+                        preset.exportScale === s
+                          ? 'border-ink bg-ink text-surface'
+                          : 'border-line bg-canvas'
+                      }`}
+                    >
+                      {s}×
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <FieldLabel value={preset.maxDim >= 4000 ? 'full' : preset.maxDim}>
+                  Quality max edge
+                </FieldLabel>
+                <input
+                  type="range"
+                  min={800}
+                  max={4096}
+                  step={100}
+                  value={preset.maxDim}
+                  onChange={(e) => patch({ maxDim: Number(e.target.value) })}
+                />
+              </div>
+            </Collapsible>
+
+            <Collapsible title="Tone" open={openSec.tone} onToggle={() => toggleSec('tone')}>
+              <div>
+                <FieldLabel value={preset.brightness}>Brightness</FieldLabel>
+                <input type="range" min={-100} max={100} value={preset.brightness} onChange={(e) => patch({ brightness: Number(e.target.value) })} />
+              </div>
+              <div>
+                <FieldLabel value={preset.saturation.toFixed(2)}>Saturation</FieldLabel>
+                <input type="range" min={0} max={200} value={Math.round(preset.saturation * 100)} onChange={(e) => patch({ saturation: Number(e.target.value) / 100 })} />
+              </div>
+              <div>
+                <FieldLabel value={preset.gamma.toFixed(2)}>Gamma</FieldLabel>
+                <input type="range" min={40} max={240} value={Math.round(preset.gamma * 100)} onChange={(e) => patch({ gamma: Number(e.target.value) / 100 })} />
+              </div>
+              <div>
+                <FieldLabel value={preset.contrast.toFixed(2)}>Contrast</FieldLabel>
+                <input type="range" min={50} max={200} value={Math.round(preset.contrast * 100)} onChange={(e) => patch({ contrast: Number(e.target.value) / 100 })} />
+              </div>
+              <div>
+                <FieldLabel value={Math.round(preset.noise * 100)}>Noise</FieldLabel>
+                <input type="range" min={0} max={100} value={Math.round(preset.noise * 100)} onChange={(e) => patch({ noise: Number(e.target.value) / 100 })} />
+              </div>
+              <div>
+                <FieldLabel value={`${Math.round(preset.strength * 100)}%`}>Strength</FieldLabel>
+                <input type="range" min={0} max={100} value={Math.round(preset.strength * 100)} onChange={(e) => patch({ strength: Number(e.target.value) / 100 })} />
+              </div>
+              <div>
+                <FieldLabel value={preset.softness.toFixed(1)}>Softness</FieldLabel>
+                <input type="range" min={0} max={30} value={Math.round(preset.softness * 10)} onChange={(e) => patch({ softness: Number(e.target.value) / 10 })} />
+              </div>
+              <div>
+                <FieldLabel value={preset.seed}>Seed</FieldLabel>
+                <input type="number" value={preset.seed} onChange={(e) => patch({ seed: Number(e.target.value) || 0 })} className="w-full border border-line bg-canvas px-2 py-1.5 font-mono text-[13px]" />
+              </div>
+            </Collapsible>
+
+            <Collapsible title="Palette" open={openSec.palette} onToggle={() => toggleSec('palette')}>
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
-                  Palette
-                </span>
+                <span className="text-[11px] text-muted">Colors</span>
                 <button type="button" onClick={extractPal} disabled={!source} className="text-[11px] text-muted hover:text-ink disabled:opacity-40">
                   Extract
                 </button>
@@ -1184,7 +1076,7 @@ export default function App() {
                         colorMode: pr.colors.length > 2,
                       })
                     }
-                    className="flex h-6 overflow-hidden rounded-sm border border-line"
+                    className="flex h-6 overflow-hidden border border-line"
                     style={{ width: 8 + pr.colors.length * 10 }}
                   >
                     {pr.colors.map((c) => (
@@ -1195,7 +1087,7 @@ export default function App() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {preset.paletteHex.map((hex, i) => (
-                  <label key={`${hex}-${i}`} className="flex items-center gap-1 rounded border border-line bg-canvas px-1.5 py-1">
+                  <label key={`${hex}-${i}`} className="flex items-center gap-1 border border-line bg-canvas px-1.5 py-1">
                     <input
                       type="color"
                       value={hex}
@@ -1233,85 +1125,84 @@ export default function App() {
                 {preset.paletteHex.length < 12 && (
                   <button
                     type="button"
-                    onClick={() =>
-                      patch({
-                        paletteHex: [...preset.paletteHex, '#888888'],
-                        colorMode: true,
-                      })
-                    }
-                    className="rounded border border-dashed border-line px-2 py-1 text-[12px] text-muted"
+                    onClick={() => patch({ paletteHex: [...preset.paletteHex, '#888888'], colorMode: true })}
+                    className="border border-dashed border-line px-2 py-1 text-[12px] text-muted"
                   >
                     +
                   </button>
                 )}
               </div>
-            </div>
+            </Collapsible>
 
-            <div className="flex flex-col gap-1.5">
-              <Toggle on={preset.invert} label="Invert" onClick={() => patch({ invert: !preset.invert })} />
-              <Toggle
-                on={preset.serpentine}
-                label="Serpentine"
-                onClick={() => patch({ serpentine: !preset.serpentine })}
-              />
-              <Toggle
-                on={preset.edgeAware}
-                label="Edge aware"
-                onClick={() => patch({ edgeAware: !preset.edgeAware })}
-              />
-              <Toggle
-                on={preset.colorMode}
-                label="Color diffusion"
-                onClick={() => patch({ colorMode: !preset.colorMode })}
-              />
-            </div>
+            <Collapsible title="Options" open={openSec.options} onToggle={() => toggleSec('options')}>
+              <div className="flex flex-col gap-1.5">
+                <Toggle on={preset.invert} label="Invert" onClick={() => patch({ invert: !preset.invert })} />
+                <Toggle on={preset.serpentine} label="Serpentine" onClick={() => patch({ serpentine: !preset.serpentine })} />
+                <Toggle on={preset.edgeAware} label="Edge aware" onClick={() => patch({ edgeAware: !preset.edgeAware })} />
+                <Toggle on={preset.colorMode} label="Color diffusion" onClick={() => patch({ colorMode: !preset.colorMode })} />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={copyPreset} className="flex-1 border border-line py-2 text-[12px] text-ink-soft hover:border-line-strong">
+                  Export preset
+                </button>
+                <label className="flex-1 cursor-pointer border border-line py-2 text-center text-[12px] text-ink-soft hover:border-line-strong">
+                  Import
+                  <input
+                    type="file"
+                    accept="application/json,.json"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0]
+                      if (!f) return
+                      try {
+                        setPreset(presetFromJson(await f.text()))
+                      } catch {
+                        setError('Invalid preset JSON')
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              {error && (
+                <p className="mt-2 border border-line bg-fill px-3 py-2 text-[13px] text-ink-soft">{error}</p>
+              )}
+            </Collapsible>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={copyPreset}
-                className="flex-1 rounded-md border border-line py-2 text-[12px] text-ink-soft hover:border-line-strong"
-              >
-                Export preset
-              </button>
-              <label className="flex-1 cursor-pointer rounded-md border border-line py-2 text-center text-[12px] text-ink-soft hover:border-line-strong">
-                Import
-                <input
-                  type="file"
-                  accept="application/json,.json"
-                  className="sr-only"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0]
-                    if (!f) return
-                    try {
-                      const text = await f.text()
-                      setPreset(presetFromJson(text))
-                    } catch {
-                      setError('Invalid preset JSON')
-                    }
-                  }}
-                />
-              </label>
-            </div>
-
-            {error && (
-              <p className="rounded-md border border-line bg-fill px-3 py-2 text-[13px] text-ink-soft">
-                {error}
-              </p>
-            )}
-            </>
-            )}
+            <Collapsible
+              title="Generate"
+              open={openSec.generate}
+              onToggle={() => toggleSec('generate')}
+              badge={preset.genType}
+            >
+              <GeneratePanel
+                genType={preset.genType}
+                genValue={preset.genValue}
+                genWidth={preset.genWidth}
+                genHeight={preset.genHeight}
+                genAnimate={preset.genAnimate}
+                genSpeed={preset.genSpeed}
+                genLabel={preset.genLabel}
+                genAccent={preset.genAccent}
+                onChange={(p) => patch(p as Partial<StudioPreset>)}
+                onApply={() => {
+                  if (!preset.genType) patch({ genType: 'bar-chart' as GeneratorId })
+                  const built = buildGenBuffer(genPhase)
+                  if (built) commitGenSource(built.canvas, built.buf)
+                }}
+                onStop={() => patch({ genType: undefined, genAnimate: false })}
+              />
+            </Collapsible>
           </div>
 
-          <div className="mt-auto border-t border-line px-4 py-3">
+          <div className="shrink-0 border-t border-line px-4 py-2.5">
             <p className="text-[11px] leading-relaxed text-faint">
               {activeMeta.name}
-              {preset.genType ? ` · gen ${preset.genType}` : ''}.
-              Keys: 1-9 algo, arrows threshold, space compare, ⌘S export. Generate tab builds charts & controls.
+              {preset.genType ? ` · ${preset.genType}` : ''}. Locked layout. ⌘S export.
             </p>
           </div>
         </aside>
       </main>
+      </div>
 
       {/* Examples gallery modal */}
       {showExamples && (

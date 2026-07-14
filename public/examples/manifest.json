@@ -35,8 +35,8 @@
   "demos": [
     {
       "id": "portrait-fs",
-      "title": "Portrait · Floyd-Steinberg",
-      "blurb": "Classic error diffusion on continuous tone.",
+      "title": "Portrait \u00b7 Floyd-Steinberg",
+      "blurb": "Real photo, classic error diffusion.",
       "source": "portrait",
       "sourceFile": "sources/portrait.png",
       "resultFile": "results/portrait-fs.png",
@@ -45,7 +45,7 @@
     },
     {
       "id": "portrait-atkinson",
-      "title": "Portrait · Atkinson",
+      "title": "Portrait \u00b7 Atkinson",
       "blurb": "Higher contrast Mac print heritage.",
       "source": "portrait",
       "sourceFile": "sources/portrait.png",
@@ -55,8 +55,8 @@
     },
     {
       "id": "photo-blue",
-      "title": "Landscape · Blue noise",
-      "blurb": "Modern grain without ordered lattice.",
+      "title": "Landscape \u00b7 Blue noise",
+      "blurb": "Real landscape with modern grain.",
       "source": "photo",
       "sourceFile": "sources/photo.png",
       "resultFile": "results/photo-blue.png",
@@ -65,7 +65,7 @@
     },
     {
       "id": "photo-halftone",
-      "title": "Landscape · Halftone",
+      "title": "Landscape \u00b7 Halftone",
       "blurb": "Circular print dots.",
       "source": "photo",
       "sourceFile": "sources/photo.png",
@@ -75,8 +75,8 @@
     },
     {
       "id": "ui-bayer",
-      "title": "UI · Bayer 8×8",
-      "blurb": "Stable ordered texture for interfaces.",
+      "title": "Product UI \u00b7 Bayer 8\u00d78",
+      "blurb": "Real device shot, ordered dither.",
       "source": "ui",
       "sourceFile": "sources/ui.png",
       "resultFile": "results/ui-bayer.png",
@@ -85,7 +85,7 @@
     },
     {
       "id": "ui-gameboy",
-      "title": "UI · Game Boy palette",
+      "title": "UI \u00b7 Game Boy palette",
       "blurb": "4-color median-style brand look.",
       "source": "ui",
       "sourceFile": "sources/ui.png",
@@ -95,8 +95,8 @@
     },
     {
       "id": "logo-threshold",
-      "title": "Logo · 1-bit mark",
-      "blurb": "Hard cut for favicons and stamps.",
+      "title": "Abstract \u00b7 Threshold",
+      "blurb": "Real abstract form, hard cut 1-bit.",
       "source": "logo",
       "sourceFile": "sources/logo.png",
       "resultFile": "results/logo-threshold.png",
@@ -105,7 +105,7 @@
     },
     {
       "id": "logo-chunky",
-      "title": "Logo · Chunky Bayer",
+      "title": "Logo \u00b7 Chunky Bayer",
       "blurb": "Pixel size 4 for retro marks.",
       "source": "logo",
       "sourceFile": "sources/logo.png",
@@ -115,7 +115,7 @@
     },
     {
       "id": "gradient-hybrid",
-      "title": "Gradient · Hybrid",
+      "title": "Gradient \u00b7 Hybrid",
       "blurb": "Bayer bias + error diffusion.",
       "source": "gradient",
       "sourceFile": "sources/gradient.png",
@@ -125,7 +125,7 @@
     },
     {
       "id": "gradient-riemersma",
-      "title": "Gradient · Riemersma",
+      "title": "Gradient \u00b7 Riemersma",
       "blurb": "Hilbert-path diffusion.",
       "source": "gradient",
       "sourceFile": "sources/gradient.png",
@@ -135,7 +135,7 @@
     },
     {
       "id": "photo-riso",
-      "title": "Landscape · Riso palette",
+      "title": "Landscape \u00b7 Riso palette",
       "blurb": "Multi-ink dual + accent feel.",
       "source": "photo",
       "sourceFile": "sources/photo.png",
@@ -145,7 +145,7 @@
     },
     {
       "id": "portrait-chunky",
-      "title": "Portrait · Chunky FS",
+      "title": "Portrait \u00b7 Chunky FS",
       "blurb": "Pixel size 3 portrait print.",
       "source": "portrait",
       "sourceFile": "sources/portrait.png",
