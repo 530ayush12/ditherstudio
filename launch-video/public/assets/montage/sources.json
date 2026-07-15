@@ -1,0 +1,302 @@
+[
+  {
+    "file": "01-real-color.png",
+    "source": "https://picsum.photos/id/10/1920/1080",
+    "algorithm": "atkinson",
+    "palette": [
+      "#2c2c31",
+      "#4f5445",
+      "#363d40",
+      "#0e8ca6",
+      "#90c1c7",
+      "#b8d1cc",
+      "#618381",
+      "#69aebb"
+    ]
+  },
+  {
+    "file": "02-real-color.png",
+    "source": "https://picsum.photos/id/11/1920/1080",
+    "algorithm": "blue-noise",
+    "palette": [
+      "#eafcef",
+      "#dbf6ea",
+      "#bedfdc",
+      "#71808a",
+      "#95adb7",
+      "#193524",
+      "#2e442d",
+      "#3c5246"
+    ]
+  },
+  {
+    "file": "03-real-color.png",
+    "source": "https://picsum.photos/id/12/1920/1080",
+    "algorithm": "bayer-8",
+    "palette": [
+      "#0b0e0f",
+      "#dcd4d4",
+      "#806d54",
+      "#908881",
+      "#b69b80",
+      "#bfb0a7",
+      "#242c2e",
+      "#524f46"
+    ]
+  },
+  {
+    "file": "04-real-color.png",
+    "source": "https://picsum.photos/id/13/1920/1080",
+    "algorithm": "stucki",
+    "palette": [
+      "#327c90",
+      "#668690",
+      "#bccdd7",
+      "#d9e7ed",
+      "#0f2e35",
+      "#314446",
+      "#858e90",
+      "#8cb3c1"
+    ]
+  },
+  {
+    "file": "05-real-color.png",
+    "source": "https://picsum.photos/id/14/1920/1080",
+    "algorithm": "riemersma",
+    "palette": [
+      "#211a0b",
+      "#abb9b9",
+      "#524533",
+      "#706356",
+      "#ccd5d6",
+      "#ebecec",
+      "#8a867e",
+      "#a2a098"
+    ]
+  },
+  {
+    "file": "06-real-color.png",
+    "source": "https://picsum.photos/id/15/1920/1080",
+    "algorithm": "atkinson",
+    "palette": [
+      "#193328",
+      "#94a3ad",
+      "#c0d6d4",
+      "#6e6f6c",
+      "#4b5843",
+      "#546267",
+      "#818474",
+      "#7f878f"
+    ]
+  },
+  {
+    "file": "07-real-color.png",
+    "source": "https://picsum.photos/id/16/1920/1080",
+    "algorithm": "blue-noise",
+    "palette": [
+      "#6599a9",
+      "#272923",
+      "#aacad4",
+      "#90bac9",
+      "#1b6478",
+      "#467a86",
+      "#959b98",
+      "#90b5c0"
+    ]
+  },
+  {
+    "file": "08-real-color.png",
+    "source": "https://picsum.photos/id/17/1920/1080",
+    "algorithm": "bayer-8",
+    "palette": [
+      "#88906c",
+      "#aeb6b7",
+      "#4b7145",
+      "#567a54",
+      "#161e16",
+      "#30532d",
+      "#26788f",
+      "#35a8cd"
+    ]
+  },
+  {
+    "file": "09-real-color.png",
+    "source": "https://picsum.photos/id/18/1920/1080",
+    "algorithm": "stucki",
+    "palette": [
+      "#5d8640",
+      "#24461c",
+      "#6f997e",
+      "#8fa16b",
+      "#a1beb6",
+      "#355d30",
+      "#335944",
+      "#21768c"
+    ]
+  },
+  {
+    "file": "10-real-color.png",
+    "source": "https://picsum.photos/id/19/1920/1080",
+    "algorithm": "riemersma",
+    "palette": [
+      "#94782c",
+      "#20341d",
+      "#314226",
+      "#bba55a",
+      "#36523c",
+      "#44858e",
+      "#83c2c2",
+      "#cddfb6"
+    ]
+  },
+  {
+    "file": "11-real-color.png",
+    "source": "https://picsum.photos/id/21/1920/1080",
+    "algorithm": "atkinson",
+    "palette": [
+      "#960c0d",
+      "#faf8f8",
+      "#a2766b",
+      "#cbb7b5",
+      "#250201",
+      "#360406",
+      "#391013",
+      "#52343c"
+    ]
+  },
+  {
+    "file": "12-real-color.png",
+    "source": "https://picsum.photos/id/22/1920/1080",
+    "algorithm": "blue-noise",
+    "palette": [
+      "#92978f",
+      "#86857e",
+      "#7e736d",
+      "#73665f",
+      "#1d1011",
+      "#483532",
+      "#9ba9a0",
+      "#b1c3bb"
+    ]
+  },
+  {
+    "file": "13-real-color.png",
+    "source": "https://picsum.photos/id/23/1920/1080",
+    "algorithm": "bayer-8",
+    "palette": [
+      "#131416",
+      "#3a4449",
+      "#7e989c",
+      "#97b5b4",
+      "#baddcd",
+      "#e0f5df",
+      "#55646b",
+      "#687d83"
+    ]
+  },
+  {
+    "file": "14-real-color.png",
+    "source": "https://picsum.photos/id/24/1920/1080",
+    "algorithm": "stucki",
+    "palette": [
+      "#b6a68b",
+      "#814628",
+      "#351b16",
+      "#5f2e1e",
+      "#905b38",
+      "#a0714b",
+      "#cccdb7",
+      "#dbdfc5"
+    ]
+  },
+  {
+    "file": "15-real-color.png",
+    "source": "https://picsum.photos/id/25/1920/1080",
+    "algorithm": "riemersma",
+    "palette": [
+      "#f2e9eb",
+      "#995866",
+      "#b08887",
+      "#38171b",
+      "#623f4a",
+      "#ded4d6",
+      "#beb0bb",
+      "#d3c7cc"
+    ]
+  },
+  {
+    "file": "16-real-color.png",
+    "source": "https://picsum.photos/id/27/1920/1080",
+    "algorithm": "atkinson",
+    "palette": [
+      "#f8e0c4",
+      "#7f5948",
+      "#c39269",
+      "#ddb991",
+      "#9d6346",
+      "#a67d61",
+      "#232437",
+      "#5a4340"
+    ]
+  },
+  {
+    "file": "17-real-color.png",
+    "source": "https://picsum.photos/id/28/1920/1080",
+    "algorithm": "blue-noise",
+    "palette": [
+      "#7d807a",
+      "#a1aea6",
+      "#aabbce",
+      "#2d3d1b",
+      "#65802e",
+      "#7dad2b",
+      "#44720c",
+      "#4d7421"
+    ]
+  },
+  {
+    "file": "18-real-color.png",
+    "source": "https://picsum.photos/id/29/1920/1080",
+    "algorithm": "bayer-8",
+    "palette": [
+      "#a4adb1",
+      "#cdd0cc",
+      "#757774",
+      "#8d9597",
+      "#495158",
+      "#386a8b",
+      "#151d26",
+      "#35393c"
+    ]
+  },
+  {
+    "file": "19-real-color.png",
+    "source": "https://picsum.photos/id/30/1920/1080",
+    "algorithm": "stucki",
+    "palette": [
+      "#edcea5",
+      "#d5a677",
+      "#a14d32",
+      "#af835b",
+      "#5b2416",
+      "#88422c",
+      "#cf6d42",
+      "#ce905f"
+    ]
+  },
+  {
+    "file": "20-real-color.png",
+    "source": "https://picsum.photos/id/31/1920/1080",
+    "algorithm": "riemersma",
+    "palette": [
+      "#fdfdfd",
+      "#131313",
+      "#282828",
+      "#4e4e4e",
+      "#707070",
+      "#e1e1e1",
+      "#939393",
+      "#cacaca"
+    ]
+  }
+]

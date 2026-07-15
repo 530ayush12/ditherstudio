@@ -10,7 +10,6 @@ import {
   Moon,
   Sun,
   Trash,
-  UploadSimple,
   X,
 } from '@phosphor-icons/react'
 import { Collapsible } from './components/Collapsible'
@@ -34,6 +33,8 @@ import {
 } from './lib/presets'
 import { useDitherWorker } from './hooks/useDitherWorker'
 import { GeneratePanel } from './components/GeneratePanel'
+import {DocsPage} from './components/DocsPage'
+import {LandingPage} from './components/LandingPage'
 import { renderGenerator, type GeneratorId } from './lib/generate'
 
 type SourceState = {
@@ -43,6 +44,33 @@ type SourceState = {
   height: number
   element: HTMLImageElement
 }
+
+const DOCS_HREF = 'https://gitlab.com/arjunkshah/ditherstudio/-/blob/main/README.md'
+const GITLAB_HREF = 'https://gitlab.com/arjunkshah/ditherstudio'
+const SKILL_HREF = 'https://ditherskill.ideatr.dev'
+
+const LANDING_SHOWCASE = [
+  {src: '/showcase/gallery/01-real-color.png', title: '01 / Atkinson'},
+  {src: '/showcase/gallery/02-real-color.png', title: '02 / Blue noise'},
+  {src: '/showcase/gallery/03-real-color.png', title: '03 / Bayer 8'},
+  {src: '/showcase/gallery/04-real-color.png', title: '04 / Stucki'},
+  {src: '/showcase/gallery/05-real-color.png', title: '05 / Riemersma'},
+  {src: '/showcase/gallery/06-real-color.png', title: '06 / Atkinson'},
+  {src: '/showcase/gallery/07-real-color.png', title: '07 / Blue noise'},
+  {src: '/showcase/gallery/08-real-color.png', title: '08 / Bayer 8'},
+  {src: '/showcase/gallery/09-real-color.png', title: '09 / Stucki'},
+  {src: '/showcase/gallery/10-real-color.png', title: '10 / Riemersma'},
+  {src: '/showcase/gallery/11-real-color.png', title: '11 / Atkinson'},
+  {src: '/showcase/gallery/12-real-color.png', title: '12 / Blue noise'},
+  {src: '/showcase/gallery/13-real-color.png', title: '13 / Bayer 8'},
+  {src: '/showcase/gallery/14-real-color.png', title: '14 / Stucki'},
+  {src: '/showcase/gallery/15-real-color.png', title: '15 / Riemersma'},
+  {src: '/showcase/gallery/16-real-color.png', title: '16 / Atkinson'},
+  {src: '/showcase/gallery/17-real-color.png', title: '17 / Blue noise'},
+  {src: '/showcase/gallery/18-real-color.png', title: '18 / Bayer 8'},
+  {src: '/showcase/gallery/19-real-color.png', title: '19 / Stucki'},
+  {src: '/showcase/gallery/20-real-color.png', title: '20 / Riemersma'},
+]
 
 function FieldLabel({ children, value }: { children: React.ReactNode; value?: string | number }) {
   return (
@@ -95,9 +123,11 @@ function extractedPalettePatch(buffer: import('./lib/dither').PixelBuffer): Part
   }
 }
 
-const FEATURED_EXAMPLE_IDS = ['portrait-fs', 'photo-blue', 'ui-bayer', 'logo-threshold']
-
 export default function App() {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/docs')) {
+    return <DocsPage gitlabHref={GITLAB_HREF} studioHref="/" skillHref={SKILL_HREF} />
+  }
+
   const initialSearchRef = useRef(typeof window === 'undefined' ? '' : window.location.search)
   const initial = useMemo(() => {
     if (typeof window === 'undefined') return DEFAULT_PRESET
@@ -112,7 +142,6 @@ export default function App() {
   const [compare, setCompare] = useState(0)
   const [busy, setBusy] = useState(false)
   const [procMs, setProcMs] = useState<number | null>(null)
-  const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [resultSize, setResultSize] = useState<{ w: number; h: number } | null>(null)
@@ -605,12 +634,28 @@ export default function App() {
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
-    setDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file) void loadFile(file)
   }
 
   const dark = preset.theme === 'dark'
+
+  if (!source) {
+    return (
+      <div className={`flex h-[100dvh] max-h-[100dvh] overflow-hidden ${dark ? 'theme-dark' : ''} bg-canvas text-ink`}>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <LandingPage
+            docsHref={DOCS_HREF}
+            gitlabHref={GITLAB_HREF}
+            skillHref={SKILL_HREF}
+            onOpenEditor={() => fileInputRef.current?.click()}
+            onTrySample={() => void loadSample()}
+            showcase={LANDING_SHOWCASE}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -680,131 +725,8 @@ export default function App() {
 
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="relative flex min-h-0 flex-col border-b border-line lg:border-b-0 lg:border-r">
-          {!source ? (
-            <div
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
-              }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                setDragOver(true)
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center border-0 px-6 py-10 transition ${
-                dragOver ? 'bg-fill' : 'bg-canvas hover:bg-fill/40'
-              }`}
-            >
-              <div className="mb-5 grid h-12 w-12 place-items-center rounded-md border border-line bg-canvas">
-                <UploadSimple size={22} weight="bold" />
-              </div>
-              <h1 className="text-center text-[1.7rem] font-semibold tracking-tight">
-                Dither any image
-              </h1>
-              <p className="mt-2 max-w-sm text-center text-[14px] text-muted">
-                Drop, paste, or browse. Multi-color palettes, workers, full-res export.
-              </p>
-              <div className="mt-7 flex flex-wrap justify-center gap-2">
-                <span className="rounded-md bg-ink px-4 py-2 text-[13px] font-medium text-surface">
-                  Choose image
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void loadSample()
-                  }}
-                  className="rounded-md border border-line bg-surface px-4 py-2 text-[13px] font-medium"
-                >
-                  Try portrait
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowExamples(true)
-                  }}
-                  className="rounded-md border border-line bg-surface px-4 py-2 text-[13px] font-medium"
-                >
-                  Browse examples
-                </button>
-              </div>
-              {(() => {
-                const featured = FEATURED_EXAMPLE_IDS
-                  .map((id) => examples.find((e) => e.id === id))
-                  .filter(Boolean) as typeof examples
-                const cards = featured.length === 4 ? featured : examples.slice(0, 4)
-                if (!cards.length) return null
-                return (
-                <div
-                  className="mt-8 grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:grid-cols-4"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {cards.map((ex) => {
-                    const [subject = ex.title, method = ex.algorithm] = ex.title
-                      .split('·')
-                      .map((part) => part.trim())
-                    return (
-                      <button
-                        key={ex.id}
-                        type="button"
-                        onClick={() =>
-                          void loadNamedSample(
-                            ex.source,
-                            ex.algorithm as AlgorithmId,
-                            ex.pixelSize,
-                          )
-                        }
-                        className="group overflow-hidden rounded-[7px] border border-line bg-surface text-left shadow-[0_10px_28px_rgba(17,17,17,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-ink hover:shadow-[0_18px_42px_rgba(17,17,17,0.12)] focus:outline-none focus-visible:border-ink"
-                      >
-                        <div className="relative aspect-[4/3] overflow-hidden bg-fill">
-                          <img
-                            src={`/examples/${ex.resultFile}`}
-                            alt={ex.title}
-                            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]"
-                            style={{ imageRendering: 'pixelated' }}
-                          />
-                          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
-                          <div className="absolute left-2 top-2 overflow-hidden rounded-[4px] border border-white/70 bg-surface shadow-sm">
-                            <img
-                              src={`/examples/${ex.sourceFile}`}
-                              alt=""
-                              className="h-10 w-10 object-cover sm:h-11 sm:w-11"
-                            />
-                          </div>
-                          <span className="absolute bottom-2 left-2 rounded-[4px] bg-white/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-ink">
-                            {ex.algorithm}
-                          </span>
-                        </div>
-                        <div className="px-2.5 py-2">
-                          <p className="truncate text-[12px] font-semibold leading-tight text-ink">
-                            {subject}
-                          </p>
-                          <p className="mt-0.5 truncate text-[11px] leading-tight text-muted">
-                            {method}
-                          </p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                )
-              })()}
-              <p className="mt-4 font-mono text-[11px] text-faint">
-                PNG JPEG WebP GIF SVG · ⌘V paste · ⌘S export
-              </p>
-            </div>
-          ) : (
             <div
               className="relative flex flex-1 flex-col"
-              onDragOver={(e) => {
-                e.preventDefault()
-                setDragOver(true)
-              }}
-              onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
             >
               <div className="flex items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2">
@@ -909,7 +831,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-          )}
           <input
             ref={fileInputRef}
             type="file"

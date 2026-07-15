@@ -1,157 +1,287 @@
 {
-  "generatedAt": "2026-07-13T23:46:05.322Z",
+  "generatedAt": "2026-07-15T20:48:36.583Z",
   "sources": [
     {
-      "id": "portrait",
-      "file": "sources/portrait.png",
-      "width": 480,
-      "height": 560
+      "file": "01-picsum-10.jpg",
+      "source": "https://picsum.photos/id/10/1920/1080"
     },
     {
-      "id": "photo",
-      "file": "sources/photo.png",
-      "width": 640,
-      "height": 400
+      "file": "02-picsum-11.jpg",
+      "source": "https://picsum.photos/id/11/1920/1080"
     },
     {
-      "id": "ui",
-      "file": "sources/ui.png",
-      "width": 560,
-      "height": 360
+      "file": "03-picsum-12.jpg",
+      "source": "https://picsum.photos/id/12/1920/1080"
     },
     {
-      "id": "logo",
-      "file": "sources/logo.png",
-      "width": 400,
-      "height": 400
+      "file": "04-picsum-13.jpg",
+      "source": "https://picsum.photos/id/13/1920/1080"
     },
     {
-      "id": "gradient",
-      "file": "sources/gradient.png",
-      "width": 480,
-      "height": 320
+      "file": "05-picsum-14.jpg",
+      "source": "https://picsum.photos/id/14/1920/1080"
+    },
+    {
+      "file": "06-picsum-15.jpg",
+      "source": "https://picsum.photos/id/15/1920/1080"
+    },
+    {
+      "file": "07-picsum-16.jpg",
+      "source": "https://picsum.photos/id/16/1920/1080"
+    },
+    {
+      "file": "08-picsum-17.jpg",
+      "source": "https://picsum.photos/id/17/1920/1080"
+    },
+    {
+      "file": "09-picsum-18.jpg",
+      "source": "https://picsum.photos/id/18/1920/1080"
+    },
+    {
+      "file": "10-picsum-19.jpg",
+      "source": "https://picsum.photos/id/19/1920/1080"
+    },
+    {
+      "file": "11-picsum-21.jpg",
+      "source": "https://picsum.photos/id/21/1920/1080"
+    },
+    {
+      "file": "12-picsum-22.jpg",
+      "source": "https://picsum.photos/id/22/1920/1080"
+    },
+    {
+      "file": "13-picsum-23.jpg",
+      "source": "https://picsum.photos/id/23/1920/1080"
+    },
+    {
+      "file": "14-picsum-24.jpg",
+      "source": "https://picsum.photos/id/24/1920/1080"
+    },
+    {
+      "file": "15-picsum-25.jpg",
+      "source": "https://picsum.photos/id/25/1920/1080"
+    },
+    {
+      "file": "16-picsum-27.jpg",
+      "source": "https://picsum.photos/id/27/1920/1080"
+    },
+    {
+      "file": "17-picsum-28.jpg",
+      "source": "https://picsum.photos/id/28/1920/1080"
+    },
+    {
+      "file": "18-picsum-29.jpg",
+      "source": "https://picsum.photos/id/29/1920/1080"
+    },
+    {
+      "file": "19-picsum-30.jpg",
+      "source": "https://picsum.photos/id/30/1920/1080"
+    },
+    {
+      "file": "20-picsum-31.jpg",
+      "source": "https://picsum.photos/id/31/1920/1080"
     }
   ],
   "demos": [
     {
-      "id": "portrait-fs",
-      "title": "Portrait \u00b7 Floyd-Steinberg",
-      "blurb": "Real photo, classic error diffusion.",
-      "source": "portrait",
-      "sourceFile": "sources/portrait.png",
-      "resultFile": "results/portrait-fs.png",
-      "algorithm": "floyd-steinberg",
-      "pixelSize": 1
-    },
-    {
-      "id": "portrait-atkinson",
-      "title": "Portrait \u00b7 Atkinson",
-      "blurb": "Higher contrast Mac print heritage.",
-      "source": "portrait",
-      "sourceFile": "sources/portrait.png",
-      "resultFile": "results/portrait-atkinson.png",
+      "id": "image-01-atkinson",
+      "title": "Image 01 · Atkinson",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "01-picsum-10.jpg",
+      "sourceFile": "01-picsum-10.jpg",
+      "resultFile": "01-real-color.png",
       "algorithm": "atkinson",
       "pixelSize": 1
     },
     {
-      "id": "photo-blue",
-      "title": "Landscape \u00b7 Blue noise",
-      "blurb": "Real landscape with modern grain.",
-      "source": "photo",
-      "sourceFile": "sources/photo.png",
-      "resultFile": "results/photo-blue.png",
+      "id": "image-02-blue-noise",
+      "title": "Image 02 · Blue noise",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "02-picsum-11.jpg",
+      "sourceFile": "02-picsum-11.jpg",
+      "resultFile": "02-real-color.png",
       "algorithm": "blue-noise",
       "pixelSize": 1
     },
     {
-      "id": "photo-halftone",
-      "title": "Landscape \u00b7 Halftone",
-      "blurb": "Circular print dots.",
-      "source": "photo",
-      "sourceFile": "sources/photo.png",
-      "resultFile": "results/photo-halftone.png",
-      "algorithm": "halftone",
-      "pixelSize": 1
-    },
-    {
-      "id": "ui-bayer",
-      "title": "Product UI \u00b7 Bayer 8\u00d78",
-      "blurb": "Real device shot, ordered dither.",
-      "source": "ui",
-      "sourceFile": "sources/ui.png",
-      "resultFile": "results/ui-bayer.png",
+      "id": "image-03-bayer-8",
+      "title": "Image 03 · Bayer 8",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "03-picsum-12.jpg",
+      "sourceFile": "03-picsum-12.jpg",
+      "resultFile": "03-real-color.png",
       "algorithm": "bayer-8",
       "pixelSize": 1
     },
     {
-      "id": "ui-gameboy",
-      "title": "UI \u00b7 Game Boy palette",
-      "blurb": "4-color median-style brand look.",
-      "source": "ui",
-      "sourceFile": "sources/ui.png",
-      "resultFile": "results/ui-gameboy.png",
-      "algorithm": "floyd-steinberg",
-      "pixelSize": 1
-    },
-    {
-      "id": "logo-threshold",
-      "title": "Abstract \u00b7 Threshold",
-      "blurb": "Real abstract form, hard cut 1-bit.",
-      "source": "logo",
-      "sourceFile": "sources/logo.png",
-      "resultFile": "results/logo-threshold.png",
-      "algorithm": "threshold",
-      "pixelSize": 1
-    },
-    {
-      "id": "logo-chunky",
-      "title": "Logo \u00b7 Chunky Bayer",
-      "blurb": "Pixel size 4 for retro marks.",
-      "source": "logo",
-      "sourceFile": "sources/logo.png",
-      "resultFile": "results/logo-chunky.png",
-      "algorithm": "bayer-4",
-      "pixelSize": 4
-    },
-    {
-      "id": "gradient-hybrid",
-      "title": "Gradient \u00b7 Hybrid",
-      "blurb": "Bayer bias + error diffusion.",
-      "source": "gradient",
-      "sourceFile": "sources/gradient.png",
-      "resultFile": "results/gradient-hybrid.png",
-      "algorithm": "hybrid",
-      "pixelSize": 1
-    },
-    {
-      "id": "gradient-riemersma",
-      "title": "Gradient \u00b7 Riemersma",
-      "blurb": "Hilbert-path diffusion.",
-      "source": "gradient",
-      "sourceFile": "sources/gradient.png",
-      "resultFile": "results/gradient-riemersma.png",
-      "algorithm": "riemersma",
-      "pixelSize": 1
-    },
-    {
-      "id": "photo-riso",
-      "title": "Landscape \u00b7 Riso palette",
-      "blurb": "Multi-ink dual + accent feel.",
-      "source": "photo",
-      "sourceFile": "sources/photo.png",
-      "resultFile": "results/photo-riso.png",
+      "id": "image-04-stucki",
+      "title": "Image 04 · Stucki",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "04-picsum-13.jpg",
+      "sourceFile": "04-picsum-13.jpg",
+      "resultFile": "04-real-color.png",
       "algorithm": "stucki",
       "pixelSize": 1
     },
     {
-      "id": "portrait-chunky",
-      "title": "Portrait \u00b7 Chunky FS",
-      "blurb": "Pixel size 3 portrait print.",
-      "source": "portrait",
-      "sourceFile": "sources/portrait.png",
-      "resultFile": "results/portrait-chunky.png",
-      "algorithm": "floyd-steinberg",
-      "pixelSize": 3
+      "id": "image-05-riemersma",
+      "title": "Image 05 · Riemersma",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "05-picsum-14.jpg",
+      "sourceFile": "05-picsum-14.jpg",
+      "resultFile": "05-real-color.png",
+      "algorithm": "riemersma",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-06-atkinson",
+      "title": "Image 06 · Atkinson",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "06-picsum-15.jpg",
+      "sourceFile": "06-picsum-15.jpg",
+      "resultFile": "06-real-color.png",
+      "algorithm": "atkinson",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-07-blue-noise",
+      "title": "Image 07 · Blue noise",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "07-picsum-16.jpg",
+      "sourceFile": "07-picsum-16.jpg",
+      "resultFile": "07-real-color.png",
+      "algorithm": "blue-noise",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-08-bayer-8",
+      "title": "Image 08 · Bayer 8",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "08-picsum-17.jpg",
+      "sourceFile": "08-picsum-17.jpg",
+      "resultFile": "08-real-color.png",
+      "algorithm": "bayer-8",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-09-stucki",
+      "title": "Image 09 · Stucki",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "09-picsum-18.jpg",
+      "sourceFile": "09-picsum-18.jpg",
+      "resultFile": "09-real-color.png",
+      "algorithm": "stucki",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-10-riemersma",
+      "title": "Image 10 · Riemersma",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "10-picsum-19.jpg",
+      "sourceFile": "10-picsum-19.jpg",
+      "resultFile": "10-real-color.png",
+      "algorithm": "riemersma",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-11-atkinson",
+      "title": "Image 11 · Atkinson",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "11-picsum-21.jpg",
+      "sourceFile": "11-picsum-21.jpg",
+      "resultFile": "11-real-color.png",
+      "algorithm": "atkinson",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-12-blue-noise",
+      "title": "Image 12 · Blue noise",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "12-picsum-22.jpg",
+      "sourceFile": "12-picsum-22.jpg",
+      "resultFile": "12-real-color.png",
+      "algorithm": "blue-noise",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-13-bayer-8",
+      "title": "Image 13 · Bayer 8",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "13-picsum-23.jpg",
+      "sourceFile": "13-picsum-23.jpg",
+      "resultFile": "13-real-color.png",
+      "algorithm": "bayer-8",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-14-stucki",
+      "title": "Image 14 · Stucki",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "14-picsum-24.jpg",
+      "sourceFile": "14-picsum-24.jpg",
+      "resultFile": "14-real-color.png",
+      "algorithm": "stucki",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-15-riemersma",
+      "title": "Image 15 · Riemersma",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "15-picsum-25.jpg",
+      "sourceFile": "15-picsum-25.jpg",
+      "resultFile": "15-real-color.png",
+      "algorithm": "riemersma",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-16-atkinson",
+      "title": "Image 16 · Atkinson",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "16-picsum-27.jpg",
+      "sourceFile": "16-picsum-27.jpg",
+      "resultFile": "16-real-color.png",
+      "algorithm": "atkinson",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-17-blue-noise",
+      "title": "Image 17 · Blue noise",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "17-picsum-28.jpg",
+      "sourceFile": "17-picsum-28.jpg",
+      "resultFile": "17-real-color.png",
+      "algorithm": "blue-noise",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-18-bayer-8",
+      "title": "Image 18 · Bayer 8",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "18-picsum-29.jpg",
+      "sourceFile": "18-picsum-29.jpg",
+      "resultFile": "18-real-color.png",
+      "algorithm": "bayer-8",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-19-stucki",
+      "title": "Image 19 · Stucki",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "19-picsum-30.jpg",
+      "sourceFile": "19-picsum-30.jpg",
+      "resultFile": "19-real-color.png",
+      "algorithm": "stucki",
+      "pixelSize": 1
+    },
+    {
+      "id": "image-20-riemersma",
+      "title": "Image 20 · Riemersma",
+      "blurb": "Real web photo with extracted colors.",
+      "source": "20-picsum-31.jpg",
+      "sourceFile": "20-picsum-31.jpg",
+      "resultFile": "20-real-color.png",
+      "algorithm": "riemersma",
+      "pixelSize": 1
     }
   ]
 }

@@ -5,61 +5,58 @@ const sampleRate = 44100;
 const seconds = 14;
 const channels = 2;
 const total = sampleRate * seconds;
-const out = new Float32Array(total);
-const clamp = (v) => Math.max(-1, Math.min(1, v));
-const env = (t, a, d) => (t < 0 ? 0 : t < a ? t / a : Math.exp(-(t - a) / d));
+const left = new Float32Array(total);
+const right = new Float32Array(total);
 
-let seed = 24681357;
-const noise = () => {
+let seed = 184739;
+const rand = () => {
   seed ^= seed << 13;
   seed ^= seed >> 17;
   seed ^= seed << 5;
   return ((seed >>> 0) / 4294967295) * 2 - 1;
 };
 
-const add = (start, len, fn, gain = 1) => {
-  const a = Math.max(0, Math.floor(start * sampleRate));
-  const b = Math.min(total, Math.floor((start + len) * sampleRate));
-  for (let i = a; i < b; i += 1) out[i] += fn(i / sampleRate - start) * gain;
+const clamp = (v) => Math.max(-1, Math.min(1, v));
+const smoothstep = (x) => {
+  const t = Math.max(0, Math.min(1, x));
+  return t * t * (3 - 2 * t);
 };
 
-const tone = (start, len, freq, gain, decay = 1.2) =>
-  add(start, len, (t) => {
-    const drift = 1 + Math.sin(t * 0.8) * 0.006;
-    return (
-      Math.sin(2 * Math.PI * freq * drift * t) * 0.72 +
-      Math.sin(2 * Math.PI * freq * 1.5 * t) * 0.2
-    ) * env(t, 0.08, decay);
-  }, gain);
-
-const impact = (time, weight = 1) => {
-  add(time, 0.9, (t) => {
-    const thud = Math.sin(2 * Math.PI * (38 + 90 * Math.exp(-t / 0.04)) * t) * env(t, 0.004, 0.23);
-    const air = noise() * env(t, 0.002, 0.11) * 0.25;
-    return thud + air;
-  }, weight);
-};
-
-const tick = (time, gain = 0.12) =>
-  add(time, 0.05, (t) => (noise() * 0.7 + Math.sin(2 * Math.PI * 2400 * t) * 0.3) * env(t, 0.001, 0.02), gain);
-
-for (let i = 0; i < 20; i += 1) {
-  tick(i * 0.5 + 0.02, i % 4 === 0 ? 0.16 : 0.08);
-  if (i % 4 === 0) impact(i * 0.5, 0.34);
-}
-tone(0, 4.8, 55, 0.18, 1.4);
-tone(2.8, 4.6, 82.41, 0.18, 1.2);
-tone(6.2, 4.2, 110, 0.16, 1.0);
-tone(10.0, 4.0, 164.81, 0.2, 1.1);
-tone(10.35, 3.4, 220, 0.12, 0.8);
-impact(10.0, 0.76);
+let surfL = 0;
+let surfR = 0;
+let foamL = 0;
+let foamR = 0;
 
 for (let i = 0; i < total; i += 1) {
   const t = i / sampleRate;
-  const fadeIn = Math.min(1, t / 0.25);
-  const fadeOut = Math.min(1, (seconds - t) / 0.9);
-  const air = noise() * 0.008;
-  out[i] = Math.tanh((out[i] + air) * 0.9) * fadeIn * fadeOut;
+  const fadeIn = smoothstep(t / 1.4);
+  const fadeOut = smoothstep((seconds - t) / 1.8);
+  const master = fadeIn * fadeOut;
+
+  const swell =
+    0.42 +
+    0.32 * Math.sin(2 * Math.PI * 0.155 * t - 0.7) +
+    0.18 * Math.sin(2 * Math.PI * 0.071 * t + 1.6);
+  const wave = smoothstep((swell + 0.2) / 1.1);
+
+  surfL = surfL * 0.996 + rand() * 0.004;
+  surfR = surfR * 0.996 + rand() * 0.004;
+  foamL = foamL * 0.82 + rand() * 0.18;
+  foamR = foamR * 0.82 + rand() * 0.18;
+
+  const low = (surfL * 0.82 + surfR * 0.18) * (0.68 + wave * 0.88);
+  const lowR = (surfR * 0.82 + surfL * 0.18) * (0.68 + wave * 0.88);
+  const fizz = foamL * 0.022 * wave;
+  const fizzR = foamR * 0.022 * wave;
+
+  const pad =
+    Math.sin(2 * Math.PI * 55 * t) * 0.026 +
+    Math.sin(2 * Math.PI * 82.41 * t + 0.8) * 0.018 +
+    Math.sin(2 * Math.PI * 110 * t + 1.9) * 0.012;
+
+  const pan = Math.sin(2 * Math.PI * 0.045 * t) * 0.18;
+  left[i] = (low * (0.92 - pan) + fizz + pad * 0.78) * master;
+  right[i] = (lowR * (0.92 + pan) + fizzR + pad * 0.86) * master;
 }
 
 const dataSize = total * channels * 2;
@@ -80,9 +77,8 @@ buffer.writeUInt32LE(dataSize, 40);
 
 let offset = 44;
 for (let i = 0; i < total; i += 1) {
-  const pan = Math.sin((i / sampleRate) * 0.5) * 0.12;
-  buffer.writeInt16LE(Math.round(clamp(out[i] * (0.9 - pan)) * 32767), offset);
-  buffer.writeInt16LE(Math.round(clamp(out[i] * (0.9 + pan)) * 32767), offset + 2);
+  buffer.writeInt16LE(Math.round(clamp(Math.tanh(left[i] * 1.12)) * 32767), offset);
+  buffer.writeInt16LE(Math.round(clamp(Math.tanh(right[i] * 1.12)) * 32767), offset + 2);
   offset += 4;
 }
 
