@@ -38,8 +38,11 @@ Drop an image, pick an algorithm, export PNG. All client-side.
 
 ```bash
 npm run cli -- photo.jpg -o out.png -a floyd-steinberg -t 128 --json
+npm run cli -- clip.mp4 -o clip-dither.mp4 -a bayer-8 --video-fps 12 --video-crf 24
 npm run cli -- algorithms --json
 ```
+
+Video input uses local `ffmpeg`/`ffprobe` for frame extraction and encoding. Add `--no-audio` to drop the source audio track.
 
 ## HTTP API (agents)
 
@@ -73,7 +76,7 @@ await ditherFile('in.png', 'out.png', {
 
 ## Algorithms
 
-Threshold · Random · Floyd-Steinberg · Atkinson · Jarvis-Judice-Ninke · Stucki · Burkes · Sierra · Bayer 2/4/8 · Halftone
+Threshold · Random · Floyd-Steinberg · Atkinson · Jarvis-Judice-Ninke · Stucki · Burkes · Sierra · Bayer 2/4/8 · Halftone · Blue-noise · Riemersma · Hybrid
 
 ## Docs for agents
 

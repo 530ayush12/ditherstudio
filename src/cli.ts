@@ -33,6 +33,9 @@ Options:
   --edge-aware              Edge-aware threshold
   --color                   RGB error diffusion
   --export-scale <n>        Nearest upscale after dither (1-4)
+  --video-fps <n>           Optional output FPS for video inputs
+  --video-crf <n>           Video quality CRF (default: 24)
+  --no-audio                Drop audio when processing video
   --invert                  Invert palette order
   --no-serpentine           Disable serpentine scan
   --max-dim <n>             Max edge (default: 4096)
@@ -47,6 +50,7 @@ Algorithms:
 
 Examples:
   ditherstudio photo.jpg -o out.png -a atkinson -t 140 --seed 7
+  ditherstudio clip.mp4 -o out.mp4 -a bayer-8 --video-fps 12
   ditherstudio icon.png -o icon.png -a bayer-8 -p 4 --palette 000000,ffffff,55ffff
   ditherstudio batch ./shots -o ./dithered -a blue-noise --json
   ditherstudio serve --port 8787
@@ -130,6 +134,9 @@ function optsFromFlags(flags: Flags) {
     colorMode: Boolean(flags.color) || (palette !== undefined && palette.length > 2),
     palette,
     exportScale: flags['export-scale'] !== undefined ? Number(flags['export-scale']) : 1,
+    videoFps: flags['video-fps'] !== undefined ? Number(flags['video-fps']) : undefined,
+    videoCrf: flags['video-crf'] !== undefined ? Number(flags['video-crf']) : undefined,
+    keepAudio: !flags['no-audio'],
   }
 }
 
@@ -210,13 +217,15 @@ async function main() {
       threshold: result.options.threshold,
       seed: result.options.seed,
       pixelSize: result.pixelSize,
+      frames: 'frames' in result ? result.frames : undefined,
+      fps: 'fps' in result ? result.fps : undefined,
       bytes: result.buffer.length,
       ms: result.ms,
     }
     if (flags.json) console.log(JSON.stringify(payload))
     else
       console.log(
-        `Wrote ${output} (${result.width}x${result.height}, ${result.options.algorithm}, ${result.ms}ms)`,
+        `Wrote ${output} (${result.width}x${result.height}, ${result.options.algorithm}${'frames' in result ? `, ${result.frames} frames` : ''}, ${result.ms}ms)`,
       )
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
