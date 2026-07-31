@@ -272,11 +272,16 @@ export default function App() {
 
   const loadNamedSample = useCallback(
     async (name: string, algo?: AlgorithmId, pixelSize?: number) => {
-      const url = `/examples/sources/${name}.png`
+      const sampleFile = name === 'portrait'
+        ? '01-picsum-10.jpg'
+        : /\.[a-z0-9]+$/i.test(name)
+          ? name
+          : `${name}.png`
+      const url = `/examples/sources/${sampleFile}`
       const res = await fetch(url)
       if (!res.ok) throw new Error(`Sample "${name}" not found`)
       const blob = await res.blob()
-      await loadFile(new File([blob], `${name}.png`, { type: 'image/png' }))
+      await loadFile(new File([blob], sampleFile, { type: blob.type || 'image/png' }))
       const patchOpts: Partial<StudioPreset> = { sample: name }
       if (algo) patchOpts.algorithm = algo
       if (pixelSize) patchOpts.pixelSize = pixelSize
@@ -651,6 +656,17 @@ export default function App() {
             onOpenEditor={() => fileInputRef.current?.click()}
             onTrySample={() => void loadSample()}
             showcase={LANDING_SHOWCASE}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.svg"
+            className="sr-only"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void loadFile(f)
+              e.target.value = ''
+            }}
           />
         </div>
       </div>
