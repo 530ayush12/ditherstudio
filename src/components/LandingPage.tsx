@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import {ArrowRight, ArrowSquareOut, BookOpen} from '@phosphor-icons/react'
+import {ArrowRight, ArrowSquareOut} from '@phosphor-icons/react'
 
 type ShowcaseItem = {
   src: string
@@ -8,8 +8,7 @@ type ShowcaseItem = {
 
 type LandingPageProps = {
   docsHref: string
-  gitlabHref: string
-  skillHref: string
+  githubHref: string
   onOpenEditor: () => void
   onTrySample: () => void
   showcase: ShowcaseItem[]
@@ -19,8 +18,7 @@ const ratios = ['4 / 5', '1 / 1', '5 / 4', '16 / 9']
 
 export function LandingPage({
   docsHref,
-  gitlabHref,
-  skillHref,
+  githubHref,
   onOpenEditor,
   onTrySample,
   showcase,
@@ -124,15 +122,6 @@ export function LandingPage({
             >
               Try portrait
             </button>
-            <a
-              href={skillHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-9 items-center gap-2 border border-[#f4f0e6]/18 px-3 text-[12px] text-[#f4f0e6]/82"
-            >
-              DitherSkill
-              <BookOpen size={14} />
-            </a>
           </div>
         </div>
       </section>
@@ -159,8 +148,8 @@ export function LandingPage({
                 <button type="button" onClick={onOpenEditor} className="text-[#f3efe6]/80 hover:text-[#f3efe6]">
                   Start a dither
                 </button>
-                <a href={gitlabHref} target="_blank" rel="noreferrer" className="text-[#f3efe6]/80 hover:text-[#f3efe6]">
-                  GitLab
+                <a href={githubHref} target="_blank" rel="noreferrer" className="text-[#f3efe6]/80 hover:text-[#f3efe6]">
+                  GitHub
                 </a>
               </div>
             </div>
@@ -236,11 +225,8 @@ export function LandingPage({
             <a href={docsHref} target="_blank" rel="noreferrer" className="hover:text-ink">
               Docs
             </a>
-            <a href={gitlabHref} target="_blank" rel="noreferrer" className="hover:text-ink">
-              GitLab
-            </a>
-            <a href={skillHref} target="_blank" rel="noreferrer" className="hover:text-ink">
-              DitherSkill
+            <a href={githubHref} target="_blank" rel="noreferrer" className="hover:text-ink">
+              GitHub
             </a>
           </div>
         </div>

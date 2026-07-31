@@ -45,9 +45,8 @@ type SourceState = {
   element: HTMLImageElement
 }
 
-const DOCS_HREF = 'https://gitlab.com/arjunkshah/ditherstudio/-/blob/main/README.md'
-const GITLAB_HREF = 'https://gitlab.com/arjunkshah/ditherstudio'
-const SKILL_HREF = 'https://ditherskill.ideatr.dev'
+const DOCS_HREF = 'https://github.com/530ayush12/ditherstudio/blob/main/README.md'
+const GITHUB_HREF = 'https://github.com/530ayush12/ditherstudio'
 
 const LANDING_SHOWCASE = [
   {src: '/showcase/gallery/01-real-color.png', title: '01 / Atkinson'},
@@ -125,7 +124,7 @@ function extractedPalettePatch(buffer: import('./lib/dither').PixelBuffer): Part
 
 export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/docs')) {
-    return <DocsPage gitlabHref={GITLAB_HREF} studioHref="/" skillHref={SKILL_HREF} />
+    return <DocsPage githubHref={GITHUB_HREF} studioHref="/" />
   }
 
   const initialSearchRef = useRef(typeof window === 'undefined' ? '' : window.location.search)
@@ -651,8 +650,7 @@ export default function App() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <LandingPage
             docsHref={DOCS_HREF}
-            gitlabHref={GITLAB_HREF}
-            skillHref={SKILL_HREF}
+            githubHref={GITHUB_HREF}
             onOpenEditor={() => fileInputRef.current?.click()}
             onTrySample={() => void loadSample()}
             showcase={LANDING_SHOWCASE}

@@ -1,7 +1,6 @@
 # DitherStudio — Agent Guide
 
-Local image dithering for coding agents. Web: https://ditherstudio.ideatr.dev  
-Skill: `npx skills add arjunkshah/ditherskill -g -y` · https://ditherskill.ideatr.dev
+Local image dithering for coding agents. Web: https://ditherstudio.trylotus.dev
 
 ## Commands
 
@@ -47,4 +46,4 @@ await ditherFile('in.png', 'out.png', { algorithm: 'blue-noise', seed: 7, palett
 
 ## Studio URL presets
 
-`https://ditherstudio.ideatr.dev/?a=atkinson&t=140&pal=111111,fafafa,00ff9c&seed=42`
+`https://ditherstudio.trylotus.dev/?a=atkinson&t=140&pal=111111,fafafa,00ff9c&seed=42`

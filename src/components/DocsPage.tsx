@@ -1,9 +1,8 @@
 import {ArrowLeft, ArrowSquareOut} from '@phosphor-icons/react'
 
 type DocsPageProps = {
-  gitlabHref: string
+  githubHref: string
   studioHref: string
-  skillHref: string
 }
 
 const sections = [
@@ -24,7 +23,7 @@ const sections = [
   },
 ]
 
-export function DocsPage({gitlabHref, studioHref, skillHref}: DocsPageProps) {
+export function DocsPage({githubHref, studioHref}: DocsPageProps) {
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <header className="sticky top-0 z-20 border-b border-line/80 bg-canvas/92 backdrop-blur-sm">
@@ -34,12 +33,8 @@ export function DocsPage({gitlabHref, studioHref, skillHref}: DocsPageProps) {
             Studio
           </a>
           <div className="flex items-center gap-4 text-[12px] text-muted">
-            <a href={skillHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
-              DitherSkill
-              <ArrowSquareOut size={12} />
-            </a>
-            <a href={gitlabHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
-              GitLab
+            <a href={githubHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
+              GitHub
               <ArrowSquareOut size={12} />
             </a>
           </div>
@@ -70,8 +65,8 @@ export function DocsPage({gitlabHref, studioHref, skillHref}: DocsPageProps) {
           <p>Algorithms: threshold, random, floyd-steinberg, atkinson, jjn, stucki, burkes, sierra, bayer-2, bayer-4, bayer-8, halftone, blue-noise, riemersma, hybrid.</p>
           <p className="mt-3">
             API and examples live in the repo docs. Open the source on{' '}
-            <a href={gitlabHref} target="_blank" rel="noreferrer" className="text-ink hover:underline">
-              GitLab
+            <a href={githubHref} target="_blank" rel="noreferrer" className="text-ink hover:underline">
+              GitHub
             </a>
             .
           </p>

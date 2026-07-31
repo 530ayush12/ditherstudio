@@ -3,21 +3,14 @@
 **Dither any image in the browser.** Clean monochrome studio plus CLI and HTTP API for coding agents.
 
 <p align="center">
-  <a href="https://ditherstudio.ideatr.dev">Studio</a> ·
-  <a href="https://ditherskill.ideatr.dev">DitherSkill</a> ·
-  <a href="https://gitlab.com/arjunkshah/ditherstudio">GitLab</a> ·
-  <a href="https://github.com/arjunkshah/ditherstudio">GitHub</a>
+  <a href="https://ditherstudio.trylotus.dev">Studio</a> ·
+  <a href="https://github.com/530ayush12/ditherstudio">GitHub</a>
 </p>
 
 ## Live
 
-- **Studio:** https://ditherstudio.ideatr.dev  
-- **Agent skill + examples:** https://ditherskill.ideatr.dev  
+- **Studio:** https://ditherstudio.trylotus.dev
 - **Example pack:** `/examples` in the studio (portrait, landscape, UI, logo, gradient)
-
-```bash
-npx skills add arjunkshah/ditherskill -g -y
-```
 
 ### Regenerate example gallery
 
@@ -82,7 +75,6 @@ Threshold · Random · Floyd-Steinberg · Atkinson · Jarvis-Judice-Ninke · Stu
 
 - [AGENTS.md](./AGENTS.md)
 - [llms.txt](./llms.txt)
-- Companion skill: [arjunkshah/ditherskill](https://gitlab.com/arjunkshah/ditherskill)
 
 ## Stack
 
